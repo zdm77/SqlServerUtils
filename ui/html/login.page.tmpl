@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang='en'>
+<head>
+    <link rel='stylesheet' href='/static/css/bootstrap.min.css'>
+    <link rel='stylesheet' href='/static/css/login.css'>
+
+    <meta name="theme-color" content="#7952b3">
+    <script>
+        function doLogin() {
+           // alert('')
+            fetch('/api/login',
+                {
+                    method: 'PUT',
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({"id": 5})
+                })
+                .then(response => response.json())
+                .then((response) => {
+
+                });
+        }
+    </script>
+</head>
+{{/*{{if .}}*/}}
+{{/*   <script>doLogin()</script>*/}}
+{{/*{{else}}*/}}
+
+{{/*{{end}}*/}}
+
+
+<body class="text-center">
+<main class="form-signin">
+    <form method="POST" action="/main">
+        {{ .}}
+        <div class="form-floating">
+            <input type="login" name="login" class="form-control" id="floatingInput" placeholder="Login">
+            <label for="floatingInput">Login</label>
+        </div>
+        <div class="form-floating">
+            <input type="password" class="form-control" name="passwd" id="floatingPassword" placeholder="Password">
+            <label for="floatingPassword">Password</label>
+        </div>
+        <button class="w-100 btn btn-lg btn-primary" type="submit">Войти</button>
+        {{/*        <p class="mt-5 mb-3 text-muted">&copy; 2017–2021</p>*/}}
+    </form>
+</main>
+{{/*<form method="POST" action="/main">*/}}
+{{/*    <input name="login" value="sa"/>*/}}
+{{/*    <input name="passwd" value="masterkey"/>*/}}
+{{/*    <input type="submit" value="Войти"/>*/}}
+{{/*</form>*/}}
+</body>

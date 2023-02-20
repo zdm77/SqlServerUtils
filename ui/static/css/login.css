@@ -1,0 +1,91 @@
+html,
+body {
+    height: 100%;
+}
+
+body {
+    display: flex;
+    align-items: center;
+    padding-top: 40px;
+    padding-bottom: 40px;
+    background-color: #f5f5f5;
+}
+
+.form-signin {
+    width: 100%;
+    max-width: 330px;
+    padding: 15px;
+    margin: auto;
+}
+
+.form-signin .checkbox {
+    font-weight: 400;
+}
+
+.form-signin .form-floating:focus-within {
+    z-index: 2;
+
+}
+
+.form-signin input[type="email"] {
+    margin-bottom: 5px;
+    border-bottom-right-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.form-signin input[type="password"] {
+    margin-bottom: 10px;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+
+/*input {*/
+/*    !*outline: 2px solid #2185D0; !* Чёрная рамка *!*!*/
+
+/*    border: 2px solid #2185D0; !* Белая рамка *!*/
+/*    border-radius: 5px;*/
+/*    padding: 8px;*/
+/*}*/
+
+/*button {*/
+/*    !*border-color: #2185D0;*!*/
+/*    border: none;*/
+/*    color: white;*/
+/*    background: #2185D0;*/
+/*    border-radius: 2px;*/
+/*    padding: 8px;*/
+/*}*/
+
+/*button:hover {*/
+/*    background: #4BAFE8;*/
+/*    cursor: pointer;*/
+/*}*/
+
+/*.catalog {*/
+/*    width: 400px;*/
+/*}*/
+
+/*div {*/
+/*    margin: 10px;*/
+/*    display: flex;*/
+/*}*/
+
+/*.checkbox {*/
+/*    width: 24px;*/
+/*    height: 24px;*/
+/*    cursor: pointer;*/
+/*}*/
+
+/*label {*/
+/*    margin: 8px;*/
+/*    cursor: pointer;*/
+/*}*/
+
+/*.content {*/
+/*    margin: 0 auto;*/
+/*    width: 450px;*/
+/*    !*height: 800px;*!*/
+/*    outline: 2px solid #2185D0; !* Чёрная рамка *!*/
+/*    border: 3px solid #fff; !* Белая рамка *!*/
+/*    border-radius: 10px;*/
+/*}*/
