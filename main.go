@@ -20,7 +20,7 @@ var database = "utils"
 
 func main() {
 	var err error
-	
+
 	connString := fmt.Sprintf("server=%s;user id=%s;password=%s;port=%d;database=%s;",
 		server, user, password, port, database)
 	fmt.Println(server, user, password, database)
