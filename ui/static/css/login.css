@@ -27,7 +27,7 @@ body {
 
 }
 
-.form-signin input[type="email"] {
+.form-signin input[type="login"] {
     margin-bottom: 5px;
     border-bottom-right-radius: 0;
     border-bottom-left-radius: 0;

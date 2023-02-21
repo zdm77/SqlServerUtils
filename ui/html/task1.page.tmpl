@@ -1,5 +1,26 @@
 {{template "base" .}}
 
 {{define "main"}}
-    Задача 1
+    <main class="form-main">
+        <div class="card">
+            <div class="card-header">
+                Задача: Загрузка Excel
+            </div>
+            <form>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">
+                        <div class="mb-3">
+                            <label for="formFile" class="form-label">Файл для загрузки</label>
+                            <input class="form-control" type="file" id="formFile">
+                        </div>
+                        <button class="btn btn-primary" type="submit">Выполнить</button>
+                    </li>
+                    <li class="list-group-item">
+
+                    </li>
+                </ul>
+
+            </form>
+        </div>
+    </main>
 {{end}}

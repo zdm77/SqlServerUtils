@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 	"sqlutils/backend/database"
+	"sqlutils/backend/model"
+	"sqlutils/backend/session"
 	"strings"
 )
 
@@ -24,7 +26,12 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	tpl.Execute(w, data)
 }
 func DoLogin(w http.ResponseWriter, r *http.Request) {
-	user := r.FormValue("login")
+
+	user := session.GetSessionData(r)
+	if user != nil && user.IsLogin {
+		fmt.Println("")
+	}
+	login := r.FormValue("login")
 	password := r.FormValue("passwd")
 	server := ""
 	port := ""
@@ -49,19 +56,22 @@ func DoLogin(w http.ResponseWriter, r *http.Request) {
 			dbName = strings.Split(sc.Text(), "=")[1]
 		}
 	}
-	database.SetParam(server, user, password, port, dbName)
-	db, err := database.GetDb()
+	connStr := database.SetParam(server, login, password, port, dbName)
+	db, err := database.GetDb(connStr)
 	defer db.Close()
 	err = db.Ping()
-	type MessageObject struct {
-		Id int
-	}
+
 	if err != nil {
 		fmt.Println(err.Error())
 		var tpl = template.Must(template.ParseFiles("./ui/html/login.page.tmpl"))
 		data := "Не верное имя или пароль"
 		tpl.Execute(w, data)
 	} else {
+		var userSession model.User
+		userSession.IsLogin = true
+		userSession.Login = login
+		userSession.ConnString = connStr
+		session.Save(userSession, w, r)
 		files := []string{
 			"./ui/html/home.page.tmpl",
 			"./ui/html/base.layout.tmpl",

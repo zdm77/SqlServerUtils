@@ -1,2 +1,4 @@
 /.idea/
 /*.exe
+/utils-sql-server-sessions
+/doc/*.xlsx
