@@ -20,11 +20,18 @@ func main() {
 
 	mux := http.NewServeMux()
 	fileServer := http.FileServer(http.Dir("./ui/static/"))
+
 	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
 	mux.HandleFunc("/", route.Login)
 	mux.HandleFunc("/main", route.DoLogin)
-	mux.HandleFunc("/task1", route.Task1)
+	mux.HandleFunc("/task1", route.Task1Handler)
+	mux.HandleFunc("/task-list", route.TaskListHandler)
+	mux.HandleFunc("/task-create", route.TaskCreateHandler)
+	mux.HandleFunc("/task-edit/", route.TaskEditHandler)
 
+	//api
+	mux.HandleFunc("/api/task-list", route.GetTaskListHandler)
+	mux.HandleFunc("/api/task-save", route.TaskSaveHandler)
 	//mux.HandleFunc("/login", route.Login)
 	host, _ := os.Hostname()
 	log.Println("Сервер запущен: http://" + host + ":8080")
