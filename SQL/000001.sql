@@ -19,7 +19,8 @@ create table settings_utils_task
 delete cascade,
     field_excel varchar(255),
     field_db    varchar(255),
-	col_number int
+	col_number int,
+	field_type varchar(10)
 )
 go
 

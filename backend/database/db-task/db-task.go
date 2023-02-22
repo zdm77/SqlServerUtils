@@ -73,7 +73,8 @@ func SaveTaskParams(user *model.User, params []model.TaskParams) (err error) {
 	var stmt *sql.Stmt
 	query = `delete from settings_utils_task where task_id=` + strconv.Itoa(params[0].TaskId)
 	db.Exec(query)
-	query = `insert into settings_utils_task (task_id, field_excel, field_db, col_number) values (@task_id, @field_excel, @field_db, @col_number)`
+	query = `insert into settings_utils_task (task_id, field_excel, field_db, col_number, field_type)
+values (@task_id, @field_excel, @field_db, @col_number, @field_type)`
 
 	for _, param := range params {
 		stmt, _ = db.Prepare(query)
@@ -81,6 +82,7 @@ func SaveTaskParams(user *model.User, params []model.TaskParams) (err error) {
 			sql.Named("field_excel", param.FieldExcel),
 			sql.Named("field_db", param.FieldDb),
 			sql.Named("col_number", param.Id),
+			sql.Named("field_type", param.FieldType),
 		)
 		if err != nil {
 			log.Print(err.Error())
@@ -94,7 +96,7 @@ func SaveTaskParams(user *model.User, params []model.TaskParams) (err error) {
 func GetTaskParams(user *model.User, id int, isValue bool) (result []model.TaskParams) {
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
-	query := `select   task_id, field_excel, field_db, col_number from settings_utils_task where task_id=` + strconv.Itoa(id)
+	query := `select   task_id, field_excel, field_db, col_number, field_type from settings_utils_task where task_id=` + strconv.Itoa(id)
 	if isValue {
 		query += ` and field_db!='' and field_db is not null`
 	}
@@ -105,7 +107,7 @@ func GetTaskParams(user *model.User, id int, isValue bool) (result []model.TaskP
 	}
 	for rows.Next() {
 		var r model.TaskParams
-		err = rows.Scan(&r.TaskId, &r.FieldExcel, &r.FieldDb, &r.Id)
+		err = rows.Scan(&r.TaskId, &r.FieldExcel, &r.FieldDb, &r.Id, &r.FieldType)
 		if err != nil {
 
 		}

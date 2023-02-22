@@ -11,4 +11,7 @@ type TaskParams struct {
 	TaskId     int    `json:"task_id"`
 	FieldExcel string `json:"field_excel"`
 	FieldDb    string `json:"field_db"`
+	Dir        string `json:"dir"`
+	FieldType  string `json:"field_type"`
+	Value      string `json:"value"`
 }

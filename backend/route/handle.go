@@ -246,6 +246,7 @@ func TaskUploadHandler(w http.ResponseWriter, r *http.Request) {
 	os.MkdirAll("tmp", 0777)
 	os.MkdirAll(tmpDir, 0777)
 	var taskId int
+	onlyHeader := true
 	//fmt.Println(taskId)
 	var fileExec string
 	if user != nil {
@@ -279,16 +280,28 @@ func TaskUploadHandler(w http.ResponseWriter, r *http.Request) {
 							val, _ := strconv.Atoi(string(val))
 							taskId = val
 						}
+					case "only_headers":
+						{
+							val, _ := strconv.ParseBool(string(val))
+							onlyHeader = val
+						}
 					}
 				}
 			}
 
 		}
-		task.ExecTaskFromExcel(user, fileExec, taskId)
+		//task.ExecTaskFromExcel(user, fileExec, taskId)
 	}
-	params := task.GetHeaders(user, fileExec, taskId)
+	if onlyHeader {
+		params := task.GetHeaders(user, fileExec, taskId)
+		data, _ := json.Marshal(params)
+		w.Write(data)
+	} else {
+		params := task.GetData(user, fileExec, taskId)
+		data, _ := json.Marshal(params)
+		w.Write(data)
+	}
 
-	os.RemoveAll(tmpDir)
-	data, _ := json.Marshal(params)
-	w.Write(data)
+	//os.RemoveAll(tmpDir)
+
 }

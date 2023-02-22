@@ -36,8 +36,6 @@
                                 <input class="form-control" id="str_header" value={{ .StrHeader}}>
                             </div>
                         </div>
-
-
                     </li>
                     <li class="list-group-item">
                         <div class="row">
@@ -73,6 +71,7 @@
                 let files = document.getElementById('file_upload').files
                 data.append('file', files[0]);
                 data.append('task_id', {{ .Id}});
+                data.append('only_headers', 'true');
                 let table = document.getElementById("json_data");
                 fetch('/api/upload',
                     {
@@ -182,8 +181,20 @@
                                 id: counter,
                                 field_excel: item.field_excel,
                                 field_db: item.field_db,
+                                field_type: item.field_type,
                             })
-                            htmlData += '<tr><td>' + item.field_excel + '</td><td><input class="form-control" id=val' + counter + ' value=' + item.field_db + '></td></tr>'
+                            htmlData += '<tr>' +
+                                '<td>' + item.field_excel + '</td>' +
+                                '<td><input class="form-control" id=val' + counter + ' value=' + item.field_db + '></td>' +
+                                '<td>' +
+                                ' <select id=tp' + counter + ' name="task" class="form-select">' +
+
+                                ' <option value="Строка">Строка</option>' +
+                                ' <option value="Число">Число</option>' +
+                                ' <option value="Дата">Дата</option> ' +
+                                '</select>'
+                            '</td>' +
+                            '</tr>'
                             counter++
                         }
                         table.innerHTML = htmlData;
@@ -197,15 +208,18 @@
                     let el = document.getElementById("val" + item.id)
                     if (el) {
                         item.field_db = el.value
-                        dataParamsResult.push(item)
+                        el = document.getElementById("tp" + item.id)
+                        if (el) {
+                            item.field_type = el.value
+                        }
 
                     }
+                    dataParamsResult.push(item)
                 })
 
                 let name = document.getElementById("name").value
                 let table_db = document.getElementById("table_db").value
                 let str_header = document.getElementById("str_header").value
-
                 fetch('/api/task-save',
                     {
                         method: 'PUT',

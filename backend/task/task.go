@@ -1,7 +1,6 @@
 package task
 
 import (
-	"fmt"
 	"github.com/tealeg/xlsx/v3"
 	"log"
 	"sqlutils/backend/database"
@@ -139,7 +138,9 @@ func GetHeaders(user *model.User, fileExe string, taskId int) (params []model.Ta
 	if err != nil {
 		log.Println(err.Error())
 	}
+
 	sh := wb.Sheets[0]
+	//заголовки
 	for i := 0; i < sh.MaxCol; i++ {
 		v, _ := sh.Cell(task.StrHeader-1, i)
 		params = append(params, model.TaskParams{
@@ -149,5 +150,62 @@ func GetHeaders(user *model.User, fileExe string, taskId int) (params []model.Ta
 			FieldDb:    "",
 		})
 	}
+
 	return params
+}
+
+type Result struct {
+	Headers []model.TaskParams   `json:"headers"`
+	Data    [][]model.TaskParams `json:"data"`
+}
+
+func GetData(user *model.User, fileExe string, taskId int) (data Result) {
+	task := db_task.GetTaskById(user, taskId)
+	wb, err := xlsx.OpenFile(fileExe)
+	if err != nil {
+		log.Println(err.Error())
+	}
+
+	sh := wb.Sheets[0]
+	var headers []model.TaskParams
+	params := db_task.GetTaskParams(user, taskId, true)
+	//заголовки
+	for i := 0; i < sh.MaxCol; i++ {
+		v, _ := sh.Cell(task.StrHeader-1, i)
+		for _, p := range params {
+			if p.FieldExcel == v.String() && p.Id == i {
+				headers = append(headers, p)
+			}
+		}
+
+	}
+	//данные
+	var dataO [][]model.TaskParams
+	for i := task.StrHeader; i < sh.MaxRow; i++ {
+		var dt []model.TaskParams
+		for j := 0; j < sh.MaxCol; j++ {
+
+			v, _ := sh.Cell(i, j)
+			for _, p := range params {
+				if p.Id == j {
+					dt = append(dt, model.TaskParams{
+						Id:         j,
+						TaskId:     taskId,
+						FieldExcel: v.String(),
+						FieldDb:    p.FieldDb,
+						Dir:        "",
+						FieldType:  p.FieldType,
+						Value:      v.String(),
+					})
+				}
+			}
+
+		}
+		dataO = append(dataO, dt)
+	}
+	data = Result{
+		Headers: headers,
+		Data:    dataO,
+	}
+	return data
 }
