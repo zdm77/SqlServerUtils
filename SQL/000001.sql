@@ -4,7 +4,8 @@ create table utils_task
         constraint utils_task_pk
             primary key,
     name     varchar(255),
-    table_db varchar(100)
+    table_db varchar(100),
+	str_header int default 1
 )
 go
 

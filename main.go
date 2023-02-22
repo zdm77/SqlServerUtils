@@ -27,11 +27,15 @@ func main() {
 	mux.HandleFunc("/task1", route.Task1Handler)
 	mux.HandleFunc("/task-list", route.TaskListHandler)
 	mux.HandleFunc("/task-create", route.TaskCreateHandler)
+
 	mux.HandleFunc("/task-edit/", route.TaskEditHandler)
 
 	//api
 	mux.HandleFunc("/api/task-list", route.GetTaskListHandler)
+	mux.HandleFunc("/api/task-params", route.GetTaskParamsHandler)
 	mux.HandleFunc("/api/task-save", route.TaskSaveHandler)
+	mux.HandleFunc("/api/task-save-params", route.TaskSaveParamsHandler)
+	mux.HandleFunc("/api/upload", route.TaskUploadHandler)
 	//mux.HandleFunc("/login", route.Login)
 	host, _ := os.Hostname()
 	log.Println("Сервер запущен: http://" + host + ":8080")

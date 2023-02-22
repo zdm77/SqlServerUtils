@@ -5,15 +5,21 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"path"
+	"path/filepath"
 	"sqlutils/backend/database"
 	db_task "sqlutils/backend/database/db-task"
 	"sqlutils/backend/model"
 	"sqlutils/backend/session"
+	"sqlutils/backend/task"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var MainPath, _ = os.Getwd()
@@ -195,4 +201,89 @@ func TaskSaveHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 	}
+}
+func TaskSaveParamsHandler(w http.ResponseWriter, r *http.Request) {
+	user := session.GetSessionData(r)
+	if user != nil {
+		decoder := json.NewDecoder(r.Body)
+		var task []model.TaskParams
+		err := decoder.Decode(&task)
+		if err != nil {
+			log.Println(err.Error())
+		} else {
+			err = db_task.SaveTaskParams(user, task)
+			if err != nil {
+				data, _ := json.Marshal(Message{Text: err.Error()})
+				w.Write(data)
+			} else {
+				data, _ := json.Marshal(Message{Text: "ok"})
+				w.Write(data)
+			}
+		}
+
+	}
+}
+func GetTaskParamsHandler(w http.ResponseWriter, r *http.Request) {
+	user := session.GetSessionData(r)
+	if user != nil {
+		decoder := json.NewDecoder(r.Body)
+		var task model.Task
+		err := decoder.Decode(&task)
+		if err != nil {
+			log.Println(err.Error())
+		}
+		params := db_task.GetTaskParams(user, task.Id, false)
+		data, _ := json.Marshal(params)
+		w.Write(data)
+	} else {
+		data, _ := json.Marshal(Message{Text: "not-login"})
+		w.Write(data)
+	}
+}
+func TaskUploadHandler(w http.ResponseWriter, r *http.Request) {
+	user := session.GetSessionData(r)
+	tmpDir := path.Join("tmp", time.Now().Local().Format("02012006-150405"))
+	os.MkdirAll("tmp", 0777)
+	os.MkdirAll(tmpDir, 0777)
+	var taskId int
+	var fileExec string
+	if user != nil {
+		m, err := r.MultipartReader()
+		if err != nil {
+			log.Println(err.Error())
+		} else {
+			//var files []string
+			for {
+				part, err := m.NextPart()
+				if err == io.EOF {
+					break
+				}
+				if part.FileName() != "" {
+					fileExec = filepath.Join(tmpDir, part.FileName())
+					dst, err := os.Create(fileExec)
+					_, err = io.Copy(dst, part)
+					if err != nil {
+						log.Println(err.Error())
+						break
+					}
+					err = part.Close()
+					err = dst.Close()
+
+				} else {
+
+					val, _ := ioutil.ReadAll(part)
+					switch part.FormName() {
+					case "task_id":
+						{
+							val, _ := strconv.Atoi(string(val))
+							taskId = val
+						}
+					}
+				}
+			}
+
+		}
+		task.ExecTaskFromExcel(user, fileExec, taskId)
+	}
+	os.RemoveAll(tmpDir)
 }
