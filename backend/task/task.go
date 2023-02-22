@@ -9,6 +9,7 @@ import (
 	"sqlutils/backend/model"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func ExecTaskFromExcel(user *model.User, fileExe string, taskId int) {
@@ -25,46 +26,92 @@ func ExecTaskFromExcel(user *model.User, fileExe string, taskId int) {
 		Col     int
 		FieldDb string
 	}
-	mapHeader := make(map[string]Data)
 
-	for i := 0; i < sh.MaxCol; i++ {
-		head, _ := sh.Cell(task.StrHeader-1, i)
-		for _, p := range params {
-			if p.FieldExcel == head.String() {
-				mapHeader[p.FieldExcel] = Data{
-					Col:     i,
-					FieldDb: p.FieldDb,
-				}
-			}
-		}
+	//	var dataParam []Data
+	var fields []string
+	var values []string
+	for _, p := range params {
+		fields = append(fields, p.FieldDb)
 	}
+	db, _ := database.GetDb(user.ConnString)
+	defer db.Close()
 	for i := task.StrHeader; i < sh.MaxRow; i++ {
+		values = nil
 		query := `insert into ` + task.TableDb
-		var fields []string
-		var values []string
-		for _, val := range mapHeader {
-			fields = append(fields, val.FieldDb)
-			v, _ := sh.Cell(i, val.Col)
-			vl := v.String()
-			_, err := strconv.Atoi(vl)
-			if err != nil {
-				values = append(values, `'`+v.String()+`'`)
+		for _, p := range params {
+			valEx, _ := sh.Cell(i, p.Id)
+			vl := valEx.String()
+
+			if valEx.NumFmt != "general" && valEx.NumFmt != "" && valEx.NumFmt != "0.00" && valEx.NumFmt != "0" {
+				t, err := strconv.ParseInt(vl, 10, 64)
+				if err == nil {
+					tUx := (t - 25569) * 86400
+					dt := time.Unix(tUx, 0)
+					//valIns = dt.Format("01-02-2006")
+					values = append(values, `'`+dt.Format("01-02-2006")+`'`)
+				}
 			} else {
-				values = append(values, v.String())
+
+				_, err := strconv.Atoi(vl)
+				if err != nil {
+
+					values = append(values, `'`+vl+`'`)
+				} else {
+					values = append(values, vl)
+				}
 			}
 
 		}
 		query += `(` + strings.Join(fields, ",") + `) values (` + strings.Join(values, ",") + `)`
-		fmt.Println(query)
-		db, _ := database.GetDb(user.ConnString)
-		defer db.Close()
+		//	fmt.Println(query)
 		_, err = db.Exec(query)
 		if err != nil {
 			return
 			log.Println(err.Error())
 		}
-
 	}
+
+	//for i := 0; i < sh.MaxCol; i++ {
+	//	head, _ := sh.Cell(task.StrHeader-1, i)
+	//	fmt.Println(head.String())
+	//	for _, p := range params {
+	//		if p.FieldExcel == head.String() {
+	//
+	//			dataParam = append(dataParam, Data{
+	//				Col:     i,
+	//				FieldDb: p.FieldDb,
+	//			})
+	//			continue
+	//		}
+	//	}
+	//}
+	//for i := task.StrHeader; i < sh.MaxRow; i++ {
+	//	query := `insert into ` + task.TableDb
+	//	//var fields []string
+	//
+	//	for _, val := range dataParam {
+	//		fields = append(fields, val.FieldDb)
+	//		v, _ := sh.Cell(i, val.Col)
+	//		vl := v.String()
+	//		_, err := strconv.Atoi(vl)
+	//		if err != nil {
+	//			values = append(values, `'`+v.String()+`'`)
+	//		} else {
+	//			values = append(values, v.String())
+	//		}
+	//
+	//	}
+	//	query += `(` + strings.Join(fields, ",") + `) values (` + strings.Join(values, ",") + `)`
+	//	fmt.Println(query)
+	//	db, _ := database.GetDb(user.ConnString)
+	//	defer db.Close()
+	//	_, err = db.Exec(query)
+	//	if err != nil {
+	//		return
+	//		log.Println(err.Error())
+	//	}
+	//
+	//}
 	//for i := task.StrHeader - 1; i < sh.MaxRow; i++ {
 	//	var qqq []string
 	//	for j := 0; j < sh.MaxCol; j++ {
@@ -85,4 +132,22 @@ func ExecTaskFromExcel(user *model.User, fileExe string, taskId int) {
 	//fmt.Println(qqq)
 
 	//}
+}
+func GetHeaders(user *model.User, fileExe string, taskId int) (params []model.TaskParams) {
+	task := db_task.GetTaskById(user, taskId)
+	wb, err := xlsx.OpenFile(fileExe)
+	if err != nil {
+		log.Println(err.Error())
+	}
+	sh := wb.Sheets[0]
+	for i := 0; i < sh.MaxCol; i++ {
+		v, _ := sh.Cell(task.StrHeader-1, i)
+		params = append(params, model.TaskParams{
+			Id:         i,
+			TaskId:     taskId,
+			FieldExcel: v.String(),
+			FieldDb:    "",
+		})
+	}
+	return params
 }

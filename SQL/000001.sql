@@ -6,6 +6,7 @@ create table utils_task
     name     varchar(255),
     table_db varchar(100),
 	str_header int default 1
+	
 )
 go
 
@@ -17,7 +18,8 @@ create table settings_utils_task
             references utils_task (id) on
 delete cascade,
     field_excel varchar(255),
-    field_db    varchar(255)
+    field_db    varchar(255),
+	col_number int
 )
 go
 

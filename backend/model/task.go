@@ -7,6 +7,7 @@ type Task struct {
 	StrHeader int    `json:"str_header"`
 }
 type TaskParams struct {
+	Id         int    `json:"id"`
 	TaskId     int    `json:"task_id"`
 	FieldExcel string `json:"field_excel"`
 	FieldDb    string `json:"field_db"`

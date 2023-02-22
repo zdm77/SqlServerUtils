@@ -246,6 +246,7 @@ func TaskUploadHandler(w http.ResponseWriter, r *http.Request) {
 	os.MkdirAll("tmp", 0777)
 	os.MkdirAll(tmpDir, 0777)
 	var taskId int
+	//fmt.Println(taskId)
 	var fileExec string
 	if user != nil {
 		m, err := r.MultipartReader()
@@ -285,5 +286,9 @@ func TaskUploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		task.ExecTaskFromExcel(user, fileExec, taskId)
 	}
+	params := task.GetHeaders(user, fileExec, taskId)
+
 	os.RemoveAll(tmpDir)
+	data, _ := json.Marshal(params)
+	w.Write(data)
 }
