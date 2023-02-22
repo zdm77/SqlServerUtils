@@ -2,3 +2,5 @@
 /*.exe
 /utils-sql-server-sessions
 /doc/*.xlsx
+/tmp
+/ui/.idea
