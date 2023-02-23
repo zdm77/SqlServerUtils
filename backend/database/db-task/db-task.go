@@ -11,7 +11,7 @@ import (
 func GetTaskList(user *model.User) (result []model.Task) {
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
-	query := `select  id, name, table_db,  str_header from utils_task order by id`
+	query := `select  id, name, table_db,  str_header from utils_task_catalog order by id`
 	rows, err := db.Query(query)
 	defer rows.Close()
 	if err != nil {
@@ -31,7 +31,7 @@ func GetTaskList(user *model.User) (result []model.Task) {
 func GetTaskById(user *model.User, id int) (r model.Task) {
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
-	query := `select  id, name, table_db, coalesce(str_header, 1) from utils_task where id = @Id`
+	query := `select  id, name, table_db, coalesce(str_header, 1) from utils_task_catalog where id = @Id`
 
 	stmt, err := db.Prepare(query)
 	row := stmt.QueryRow(sql.Named("Id", id))
@@ -49,10 +49,10 @@ func SaveTask(user *model.User, task model.Task) (err error, id int) {
 	var stmt *sql.Stmt
 
 	if task.Id == 0 {
-		query = `insert into utils_task (name, table_db, str_header)
+		query = `insert into utils_task_catalog (name, table_db, str_header)
 					values (@Name, @TableDb, @StrHeader);  SELECT SCOPE_IDENTITY()`
 	} else {
-		query = `update  utils_task set name = @Name, table_db = @TableDb, str_header = @StrHeader where id = @Id`
+		query = `update  utils_task_catalog set name = @Name, table_db = @TableDb, str_header = @StrHeader where id = @Id`
 	}
 	stmt, _ = db.Prepare(query)
 	err = stmt.QueryRow(sql.Named("Name", task.Name),
@@ -73,9 +73,9 @@ func SaveTaskParams(user *model.User, params []model.TaskParams) (err error) {
 	defer db.Close()
 	var query string
 	var stmt *sql.Stmt
-	query = `delete from settings_utils_task where task_id=` + strconv.Itoa(params[0].TaskId)
+	query = `delete from utils_settings_task where task_id=` + strconv.Itoa(params[0].TaskId)
 	db.Exec(query)
-	query = `insert into settings_utils_task (task_id, field_excel, field_db, col_number, field_type)
+	query = `insert into utils_settings_task (task_id, field_excel, field_db, col_number, field_type)
 values (@task_id, @field_excel, @field_db, @col_number, @field_type)`
 
 	for _, param := range params {
@@ -98,7 +98,7 @@ values (@task_id, @field_excel, @field_db, @col_number, @field_type)`
 func GetTaskParams(user *model.User, id int, isValue bool) (result []model.TaskParams) {
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
-	query := `select   task_id, field_excel, field_db, col_number, field_type from settings_utils_task where task_id=` + strconv.Itoa(id)
+	query := `select   task_id, field_excel, field_db, col_number, field_type from utils_settings_task where task_id=` + strconv.Itoa(id)
 	if isValue {
 		query += ` and field_db!='' and field_db is not null`
 	}

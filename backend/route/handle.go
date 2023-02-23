@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"sqlutils/backend/database"
 	db_task "sqlutils/backend/database/db-task"
+	"sqlutils/backend/database/db_catalog"
 	"sqlutils/backend/model"
 	"sqlutils/backend/session"
 	"sqlutils/backend/task"
@@ -344,4 +345,45 @@ func TaskExeHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write(data)
 	}
 
+}
+
+func CatalogListHandler(w http.ResponseWriter, r *http.Request) {
+	files := []string{
+		"./ui/html/catalog/catalog-list.page.tmpl",
+		"./ui/html/base.layout.tmpl",
+		"./ui/html/top.layout.tmpl",
+	}
+
+	tpl, err := template.ParseFiles(files...)
+	if err != nil {
+		log.Println(err.Error())
+	}
+
+	tpl.Execute(w, nil)
+}
+func GetCatalogListHandler(w http.ResponseWriter, r *http.Request) {
+	user := session.GetSessionData(r)
+	if user != nil {
+
+		list := db_catalog.GetCatalogList(user)
+		data, _ := json.Marshal(list)
+		w.Write(data)
+	} else {
+		data, _ := json.Marshal(Message{Text: "not-login"})
+		w.Write(data)
+	}
+}
+func CatalogCreateHandler(w http.ResponseWriter, r *http.Request) {
+	files := []string{
+		"./ui/html/catalog/catalog-create.page.tmpl",
+		"./ui/html/base.layout.tmpl",
+		"./ui/html/top.layout.tmpl",
+	}
+
+	tpl, err := template.ParseFiles(files...)
+	if err != nil {
+		log.Println(err.Error())
+	}
+
+	tpl.Execute(w, nil)
 }

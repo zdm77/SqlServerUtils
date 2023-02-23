@@ -26,9 +26,11 @@ func main() {
 	mux.HandleFunc("/main", route.DoLogin)
 	mux.HandleFunc("/task1", route.Task1Handler)
 	mux.HandleFunc("/task-list", route.TaskListHandler)
+	mux.HandleFunc("/catalog-list", route.CatalogListHandler)
 	mux.HandleFunc("/task-create", route.TaskCreateHandler)
-
 	mux.HandleFunc("/task-edit/", route.TaskEditHandler)
+
+	mux.HandleFunc("/catalog-create", route.CatalogCreateHandler)
 
 	//api
 	mux.HandleFunc("/api/task-list", route.GetTaskListHandler)
@@ -37,6 +39,7 @@ func main() {
 	mux.HandleFunc("/api/task-save-params", route.TaskSaveParamsHandler)
 	mux.HandleFunc("/api/upload", route.TaskUploadHandler)
 	mux.HandleFunc("/api/task-exe", route.TaskExeHandler)
+	mux.HandleFunc("/api/catalog-list", route.GetCatalogListHandler)
 	//mux.HandleFunc("/login", route.Login)
 	host, _ := os.Hostname()
 	log.Println("Сервер запущен: http://" + host + ":8080")

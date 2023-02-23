@@ -8,7 +8,7 @@
             </div>
             <ul class="list-group list-group-flush">
                 <li class="list-group-item">
-                    <button class="btn btn-primary bi bi-file-earmark-plus " onclick="document.location='/task-create'">
+                    <button class="btn btn-primary bi bi-file-earmark-plus " onclick="document.location='/catalog-create'">
                         <span style="margin-left: 5px">Создать</span></button>
                 </li>
                 <li class="list-group-item">
@@ -20,13 +20,13 @@
             </ul>
         </div>
         <script>
-            fetch('/api/task-list',
+            fetch('/api/catalog-list',
                 {
-                    method: 'PUT',
+                    method: 'POST',
                     headers: {
                         "Content-Type": "application/json"
                     },
-                    body: JSON.stringify({"id": 5})
+
                 })
                 .then(response => response.json())
                 .then((response) => {
@@ -36,8 +36,8 @@
                         response.map(function (item) {
                             htmlData += '<tr>' +
                                 '<td><a href="/task-edit/?id=$id">' + item.name + '</a> </td>' +
-                                '<td>' + item.table_db + '</td>' +
-                                '<td width="32px"><i class="bi-trash text-danger" style="cursor: pointer" onclick="deleteTask('+item.id+')"></i></td>' +
+                                '<td>' + item.table_name + '</td>' +
+                                '<td  width="32px"><i class="bi-trash text-danger" style="cursor: pointer" onclick="deleteTask('+item.id+')"></i></td>' +
                                 // '<td>' +
                                 // '<button type="submit" class="btn btn-primary"><i class="icon-save icon-white"></i> ываыаыаы</button>' +
                                 // '</td>' +
@@ -57,5 +57,4 @@
             }
         </script>
     </main>
-
 {{end}}
