@@ -1,6 +1,7 @@
 package db_catalog
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"sqlutils/backend/database"
@@ -47,4 +48,28 @@ func GetCatalogList(user *model.User) (result []model.Catalog) {
 
 	}
 	return result
+}
+func SaveCatalog(user *model.User, param model.Catalog) (err error, id int) {
+	db, _ := database.GetDb(user.ConnString)
+	defer db.Close()
+	var query string
+	var stmt *sql.Stmt
+
+	if param.Id == 0 {
+		query = `insert into utils_catalog_list (name, table_name)
+					values (@Name, @TableDb);  SELECT SCOPE_IDENTITY()`
+	} else {
+		query = `update  utils_catalog_list set name = @Name, table_name = @TableDb where id = @Id`
+	}
+	stmt, _ = db.Prepare(query)
+	err = stmt.QueryRow(sql.Named("Name", param.Name),
+		sql.Named("TableDb", param.TableName),
+		sql.Named("Id", param.Id),
+	).Scan(&id)
+
+	if err != nil && err.Error() != "sql: no rows in result set" {
+		log.Print(err.Error())
+	}
+
+	return err, id
 }

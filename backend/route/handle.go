@@ -387,3 +387,24 @@ func CatalogCreateHandler(w http.ResponseWriter, r *http.Request) {
 
 	tpl.Execute(w, nil)
 }
+func CatalogSaveHandler(w http.ResponseWriter, r *http.Request) {
+	user := session.GetSessionData(r)
+	if user != nil {
+		decoder := json.NewDecoder(r.Body)
+		var param model.Catalog
+		err := decoder.Decode(&param)
+		if err != nil {
+			log.Println(err.Error())
+		} else {
+			err, id := db_catalog.SaveCatalog(user, param)
+			if err != nil && err.Error() != "sql: no rows in result set" {
+				data, _ := json.Marshal(Message{Text: err.Error()})
+				w.Write(data)
+			} else {
+				data, _ := json.Marshal(Message{Text: "ok-" + strconv.Itoa(id)})
+				w.Write(data)
+			}
+		}
+
+	}
+}

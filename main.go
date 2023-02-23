@@ -40,6 +40,7 @@ func main() {
 	mux.HandleFunc("/api/upload", route.TaskUploadHandler)
 	mux.HandleFunc("/api/task-exe", route.TaskExeHandler)
 	mux.HandleFunc("/api/catalog-list", route.GetCatalogListHandler)
+	mux.HandleFunc("/api/catalog-save", route.CatalogSaveHandler)
 	//mux.HandleFunc("/login", route.Login)
 	host, _ := os.Hostname()
 	log.Println("Сервер запущен: http://" + host + ":8080")
