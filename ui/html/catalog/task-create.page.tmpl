@@ -1,6 +1,7 @@
 <head>
     <script src="/static/js/xlsx.min.js"/>
     <script>
+
     </script>
 </head>
 {{/*<script>*/}}
@@ -50,16 +51,53 @@
                 </ul>
             </form>
             <div class="col-6">
-                <button class="btn btn-primary" onclick="uploadToServ()"
-                        id="btnUpload">
-                    Загрузить
-                </button>
-                <button class="btn btn-primary" onclick="save()">Сохранить</button>
+{{/*                <button class="btn btn-primary" onclick="uploadToServ()"*/}}
+{{/*                        id="btnUpload">*/}}
+{{/*                    Загрузить*/}}
+{{/*                </button>*/}}
+                <button id="btnSave" class="btn btn-primary" onclick="save()">Сохранить</button>
             </div>
             <table id="json_data"
                    class="table table-striped table-bordered table-sm table-responsive"></table>
         </div>
         <script>
+            const strHeader = document.getElementById('str_header')
+            strHeader.addEventListener('keyup', function () {
+                valid()
+
+            });
+            const strName = document.getElementById('name')
+            strName.addEventListener('keyup', function () {
+                valid()
+
+            });
+            const tableDb = document.getElementById('table_db')
+            tableDb.addEventListener('keyup', function () {
+                valid()
+
+            });
+            let selectFile = document.getElementById('file_upload')
+            selectFile.addEventListener('change', function () {
+               uploadToServ()
+
+            });
+            let btnSave = document.getElementById('btnSave')
+            function valid() {
+                if (isNaN(strHeader.value)) {
+                    alert('Недопустимое значение. Введите число.')
+                    selectFile.disabled = true
+                    btnSave.disabled = true
+                } else {
+                    if (strHeader.value === '' || strName.value === '' || tableDb.value === '') {
+                        selectFile.disabled = true
+                        btnSave.disabled = true
+                    } else {
+                        selectFile.disabled = false
+                        btnSave.disabled = false
+                    }
+                }
+            }
+            valid()
             let dataParams = []
             renderData()
 
@@ -68,9 +106,11 @@
                 //  const form = document.getElementById('form')
                 const form = document.querySelector('form')
                 const data = new FormData(form);
+                const strHeaderVal = document.getElementById('str_header').value
                 let files = document.getElementById('file_upload').files
                 data.append('file', files[0]);
-                data.append('task_id', {{ .Id}});
+             //   data.append('task_id', {{ .Id}});
+                data.append('str_header', strHeaderVal);
                 data.append('only_headers', 'true');
                 let table = document.getElementById("json_data");
                 fetch('/api/upload',
@@ -82,7 +122,19 @@
                     .then((response) => {
                         let htmlData = ''
                         response.map(function (item) {
-                            htmlData += '<tr><td>' + item.field_excel + '</td><td><input class="form-control" id=val' + item.id + '></td></tr>'
+
+                            htmlData += '<tr><td>' + item.field_excel + '</td><td><input class="form-control" id=val' + item.id + '></td> ' +
+                                '<td>' +
+                                ' <select id=tp' + item.id + ' name="task" class="form-select">' +
+
+                                ' <option value="Строка">Строка</option>' +
+                                ' <option value="Число">Число</option>' +
+                                ' <option value="Дата">Дата</option> ' +
+                                '</select>'
+                            '</td>' +
+                            '</tr>'
+
+
                             dataParams.push({
                                 task_id: {{ .Id}},
                                 id: item.id,
@@ -149,7 +201,16 @@
                                 col_number: counter,
                             })
 
-                            htmlData += '<tr><td>' + head + '</td><td><input class="form-control" id=val' + counter + '></td></tr>'
+                            htmlData += '<tr><td>' + head + '</td><td><input class="form-control" id=val' + counter + '></td> ' +
+                                '<td>' +
+                                ' <select id=tp' + counter + ' name="task" class="form-select">' +
+
+                                ' <option value="Строка">Строка</option>' +
+                                ' <option value="Число">Число</option>' +
+                                ' <option value="Дата">Дата</option> ' +
+                                '</select>'
+                            '</td>' +
+                            '</tr>'
                         }
                         table.innerHTML = htmlData;
                     }
@@ -189,12 +250,14 @@
                                 '<td>' +
                                 ' <select id=tp' + counter + ' name="task" class="form-select">' +
 
+                                ' <option selected>' + item.field_type + '</option>' +
                                 ' <option value="Строка">Строка</option>' +
                                 ' <option value="Число">Число</option>' +
                                 ' <option value="Дата">Дата</option> ' +
                                 '</select>'
                             '</td>' +
                             '</tr>'
+
                             counter++
                         }
                         table.innerHTML = htmlData;
@@ -203,6 +266,7 @@
             }
 
             function save() {
+
                 let dataParamsResult = []
                 dataParams.map(function (item) {
                     let el = document.getElementById("val" + item.id)
@@ -227,7 +291,7 @@
                             "Content-Type": "application/json"
                         },
                         body: JSON.stringify({
-                            id: {{ .Id}},
+                            id: id,
                             name: name,
                             table_db: table_db,
                             str_header: Number(str_header)
@@ -235,9 +299,17 @@
                     })
                     .then(response => response.json())
                     .then((response) => {
-                        console.log(dataParamsResult)
+                        let txtArr = response.text.split("-")
+                        console.log(txtArr)
+                        console.log(txtArr[1])
+                        if (txtArr[0] == "ok") {
+                            if (!id) {
+                                id = Number(txtArr[1])
+                                for (let i = 0; i < dataParamsResult.length; i++) {
+                                    dataParamsResult[i].task_id=id
+                                }
+                            }
 
-                        if (response.text == "ok") {
                             //Сохраняем таблицу
                             if (dataParams.length > 0) {
                                 fetch('/api/task-save-params',
@@ -266,6 +338,7 @@
                         }
                     });
             }
+            let id = {{ .Id}}
         </script>
     </main>
 

@@ -11,7 +11,6 @@
             <div class="card-header">
                 Задача: Загрузка Excel
             </div>
-
             <ul class="list-group list-group-flush">
                 <li class="list-group-item">
                     <form id='form'
@@ -22,7 +21,6 @@
                                     <div class="col-3">
                                         <label for="task" class="form-label">Выбор задачи</label>
                                         <select id="taskId" name="task" class="form-select"></select>
-
                                     </div>
                                     <div class="col">
                                         <label for="formFile" class="form-label">Файл для загрузки</label>
@@ -30,24 +28,27 @@
                                     </div>
                                 </div>
                             </li>
-{{/*                            <li class="list-group-item">*/}}
-{{/*                                <div class="row">*/}}
-{{/*                                    <div class="col-sm">*/}}
-{{/*                                        <label for="formFile" class="form-label">Файл для загрузки</label>*/}}
-{{/*                                        <input class="form-control" type="file" id="file_upload">*/}}
-{{/*                                    </div>*/}}
-{{/*                                </div>*/}}
-{{/*                            </li>*/}}
+                            {{/*                            <li class="list-group-item">*/}}
+                            {{/*                                <div class="row">*/}}
+                            {{/*                                    <div class="col-sm">*/}}
+                            {{/*                                        <label for="formFile" class="form-label">Файл для загрузки</label>*/}}
+                            {{/*                                        <input class="form-control" type="file" id="file_upload">*/}}
+                            {{/*                                    </div>*/}}
+                            {{/*                                </div>*/}}
+                            {{/*                            </li>*/}}
                         </ul>
                     </form>
                 </li>
                 <li class="list-group-item">
                     <div class="row">
                         <div class="col-4">
-                            <button class="btn btn-primary" onclick="uploadToServ()">1. Загрузить</button>
-                            <button class="btn btn-primary" onclick="upload()">2. Выполнить</button>
+{{/*                            <button id="btnUpload" class="btn btn-primary" onclick="uploadToServ()">1. Загрузить*/}}
+{{/*                            </button>*/}}
+                            <button id="btnExe" class="btn btn-primary" onclick="taskExe()">Выполнить</button>
                         </div>
                     </div>
+                </li>
+                <li class="list-group-item">
                     <div class="row">
                         <div class="col">
                             <div class="container  table-responsive">
@@ -60,10 +61,15 @@
             </ul>
         </div>
         <script>
+            //let btnUpload = document.getElementById('btnUpload')
+            let btnExe = document.getElementById('btnExe')
+          //  btnUpload.disabled = true
+            btnExe.disabled = true
             let task = {}
             let tasks = []
             let headers = []
             let data = []
+            let result = []
             let selectTask = document.getElementById('taskId')
             selectTask.addEventListener('change', function () {
                 let id = selectTask.value
@@ -74,7 +80,33 @@
                 }
 
             });
+            let selectFile = document.getElementById('file_upload')
+            selectFile.addEventListener('change', function () {
+
+                uploadToServ()
+
+            });
             getTasks()
+
+            function taskExe() {
+                fetch('/api/task-exe',
+                    {
+                        method: 'POST',
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify(result)
+                    })
+                    .then(response => response.json())
+                    .then((response) => {
+                        if (response.text === 'ok') {
+                            alert('Задача создана')
+                        } else {
+                            alert('Ошибка: ' + response.text)
+                        }
+
+                    });
+            }
 
             function uploadToServ() {
 
@@ -83,7 +115,6 @@
 
                 const data = new FormData(form);
                 let files = document.getElementById('file_upload').files
-                console.log(files[0])
                 data.append('file', files[0]);
                 data.append('task_id', task.id);
                 data.append('only_headers', 'false');
@@ -94,6 +125,14 @@
                     })
                     .then(response => response.json())
                     .then((response) => {
+                        task.file_upload = response.file_upload
+                        result = {
+                            headers: response.headers,
+                            data: response.data,
+                            task: task,
+                        }
+                        let data = []
+                        let isGlobalError = false
                         let table = document.getElementById('json_data')
                         let dt = '<tr>'
                         response.headers.map(function (item) {
@@ -101,32 +140,37 @@
 
                         })
                         dt += '</tr>'
-
+                        let counter = 0
                         response.data.map(function (item) {
                             dt += '<tr>'
                             for (let itm of item) {
-                                let isError = false
-                                if (itm.field_type === 'Дата' || itm.field_type === 'Число') {
-                                    if (!isNaN(itm.value)) {
-                                        if (itm.field_type === 'Дата') {
-                                            let date = new Date(Math.round((Number(itm.value) - 25569) * 86400 * 1000))
-                                            itm.value = date.toLocaleDateString()
-                                        }
-                                    } else {
-                                        isError = true
-                                    }
-                                }
+                                //let isError = false
+                                // if (itm.field_type === 'Дата' || itm.field_type === 'Число') {
+                                //     if (!isNaN(itm.value)) {
+                                //         if (itm.field_type === 'Дата') {
+                                //             let date = new Date(Math.round((Number(itm.value) - 25569) * 86400 * 1000))
+                                //             itm.value = date.toLocaleDateString()
+                                //         }
+                                //     } else {
+                                //         isError = true
+                                //     }
+                                // }
 
-                                if (isError) {
+                                if (itm.is_error) {
+                                    isGlobalError = true
                                     dt += '<td style="color: white; background-color: red ">' + itm.value + '</td>'
                                 } else {
                                     dt += '<td>' + itm.value + '</td>'
                                 }
+                                //  item.data[counter].value= itm.value
                             }
+
+                            // data.push(item)
                             dt += '</tr>'
                         })
 
                         table.innerHTML = dt
+                        btnExe.disabled = isGlobalError
                     });
             }
 
@@ -142,6 +186,7 @@
                     })
                     .then(response => response.json())
                     .then((response) => {
+                        if (response.text === 'not-login') document.location = '/'
                         for (let item of response) {
                             tasks.push(item)
                             htmlD += '<option value="' + item.id + '">' + item.name + '</option>'

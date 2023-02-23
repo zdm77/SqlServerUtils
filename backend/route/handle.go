@@ -35,6 +35,7 @@ func Home(w http.ResponseWriter, r *http.Request) {
 }
 func Login(w http.ResponseWriter, r *http.Request) {
 	var tpl = template.Must(template.ParseFiles("./ui/html/login.page.tmpl"))
+	//var tpl = template.Must(template.ParseFiles("./ui/html/test.page.html"))
 	data := ""
 	tpl.Execute(w, data)
 }
@@ -99,8 +100,10 @@ func DoLogin(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func Task1Handler(w http.ResponseWriter, r *http.Request) {
+
+	//	if user != nil {
 	files := []string{
-		"./ui/html/task/task1.page.tmpl",
+		"./ui/html/task/task-exe.page.tmpl",
 		"./ui/html/base.layout.tmpl",
 		"./ui/html/top.layout.tmpl",
 	}
@@ -109,8 +112,13 @@ func Task1Handler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err.Error())
 	}
+	user := session.GetSessionData(r)
+	var data []byte
+	if user != nil {
+		data, _ = json.Marshal(Message{Text: "not-login"})
 
-	tpl.Execute(w, nil)
+	}
+	tpl.Execute(w, data)
 }
 func ReturnToLogin(w http.ResponseWriter) {
 	var tpl = template.Must(template.ParseFiles("./ui/html/login.page.tmpl"))
@@ -190,12 +198,12 @@ func TaskSaveHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Println(err.Error())
 		} else {
-			err = db_task.SaveTask(user, task)
-			if err != nil {
+			err, id := db_task.SaveTask(user, task)
+			if err != nil && err.Error() != "sql: no rows in result set" {
 				data, _ := json.Marshal(Message{Text: err.Error()})
 				w.Write(data)
 			} else {
-				data, _ := json.Marshal(Message{Text: "ok"})
+				data, _ := json.Marshal(Message{Text: "ok-" + strconv.Itoa(id)})
 				w.Write(data)
 			}
 		}
@@ -246,6 +254,7 @@ func TaskUploadHandler(w http.ResponseWriter, r *http.Request) {
 	os.MkdirAll("tmp", 0777)
 	os.MkdirAll(tmpDir, 0777)
 	var taskId int
+	var strHeader int
 	onlyHeader := true
 	//fmt.Println(taskId)
 	var fileExec string
@@ -285,6 +294,11 @@ func TaskUploadHandler(w http.ResponseWriter, r *http.Request) {
 							val, _ := strconv.ParseBool(string(val))
 							onlyHeader = val
 						}
+					case "str_header":
+						{
+							val, _ := strconv.Atoi(string(val))
+							strHeader = val
+						}
 					}
 				}
 			}
@@ -293,7 +307,7 @@ func TaskUploadHandler(w http.ResponseWriter, r *http.Request) {
 		//task.ExecTaskFromExcel(user, fileExec, taskId)
 	}
 	if onlyHeader {
-		params := task.GetHeaders(user, fileExec, taskId)
+		params := task.GetHeaders(user, fileExec, strHeader)
 		data, _ := json.Marshal(params)
 		w.Write(data)
 	} else {
@@ -303,5 +317,31 @@ func TaskUploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//os.RemoveAll(tmpDir)
+
+}
+func TaskExeHandler(w http.ResponseWriter, r *http.Request) {
+	user := session.GetSessionData(r)
+	var data []byte
+	if user != nil {
+		decoder := json.NewDecoder(r.Body)
+		var tsk model.Result
+		err := decoder.Decode(&tsk)
+		if err != nil {
+			log.Println(err.Error())
+		}
+		err = task.ExecTaskFromExcel(user, tsk)
+		if err == nil {
+			data, _ = json.Marshal(Message{Text: "ok"})
+			w.Write(data)
+		} else {
+			data, _ = json.Marshal(Message{Text: "Ошибка: " + err.Error()})
+			w.Write(data)
+		}
+		//data, _ = json.Marshal(params)
+
+	} else {
+		data, _ = json.Marshal(Message{Text: "not-login"})
+		w.Write(data)
+	}
 
 }

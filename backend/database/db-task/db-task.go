@@ -42,28 +42,30 @@ func GetTaskById(user *model.User, id int) (r model.Task) {
 
 	return r
 }
-func SaveTask(user *model.User, task model.Task) (err error) {
+func SaveTask(user *model.User, task model.Task) (err error, id int) {
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
 	var query string
 	var stmt *sql.Stmt
 
 	if task.Id == 0 {
-		query = `insert into utils_task (name, table_db, str_header) values (@Name, @TableDb, @StrHeader)`
+		query = `insert into utils_task (name, table_db, str_header)
+					values (@Name, @TableDb, @StrHeader);  SELECT SCOPE_IDENTITY()`
 	} else {
 		query = `update  utils_task set name = @Name, table_db = @TableDb, str_header = @StrHeader where id = @Id`
 	}
 	stmt, _ = db.Prepare(query)
-	_, err = stmt.Exec(sql.Named("Name", task.Name),
+	err = stmt.QueryRow(sql.Named("Name", task.Name),
 		sql.Named("TableDb", task.TableDb),
 		sql.Named("Id", task.Id),
 		sql.Named("StrHeader", task.StrHeader),
-	)
-	if err != nil {
+	).Scan(&id)
+
+	if err != nil && err.Error() != "sql: no rows in result set" {
 		log.Print(err.Error())
 	}
 
-	return err
+	return err, id
 }
 
 func SaveTaskParams(user *model.User, params []model.TaskParams) (err error) {

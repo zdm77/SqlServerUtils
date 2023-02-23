@@ -17,7 +17,7 @@ func main() {
 	//var dbName = "utils"
 
 	var err error
-
+	os.RemoveAll("tmp")
 	mux := http.NewServeMux()
 	fileServer := http.FileServer(http.Dir("./ui/static/"))
 
@@ -36,6 +36,7 @@ func main() {
 	mux.HandleFunc("/api/task-save", route.TaskSaveHandler)
 	mux.HandleFunc("/api/task-save-params", route.TaskSaveParamsHandler)
 	mux.HandleFunc("/api/upload", route.TaskUploadHandler)
+	mux.HandleFunc("/api/task-exe", route.TaskExeHandler)
 	//mux.HandleFunc("/login", route.Login)
 	host, _ := os.Hostname()
 	log.Println("Сервер запущен: http://" + host + ":8080")

@@ -33,8 +33,15 @@
                         let table = document.getElementById("json_data");
                         let htmlData = '<tr><th>Наименование</th><th>Таблица БД</th></tr>';
                         response.map(function (item) {
-                            htmlData += '<tr><td><a href="/task-edit/?id=$id">' + item.name + '</a> </td><td>'
-                                + item.table_db + '</td></tr>';
+                            htmlData += '<tr>' +
+                                '<td><a href="/task-edit/?id=$id">' + item.name + '</a> </td>' +
+                                '<td>' + item.table_db + '</td>' +
+                                // '<td>' +
+                                // '<button type="submit" class="btn btn-primary"><i class="icon-save icon-white"></i> ываыаыаы</button>' +
+                                // '</td>' +
+                                '</tr> ';
+
+
                             htmlData = htmlData.replaceAll("$id", item.id)
                         })
                         table.innerHTML = htmlData;
@@ -42,6 +49,10 @@
                         document.location = '/'
                     }
                 });
+
+            function deleteTask(id) {
+                alert(id)
+            }
         </script>
     </main>
 
