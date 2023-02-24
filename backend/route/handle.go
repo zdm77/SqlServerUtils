@@ -143,6 +143,9 @@ func TaskListHandler(w http.ResponseWriter, r *http.Request) {
 		"./ui/html/catalog/task-list.page.tmpl",
 		"./ui/html/base.layout.tmpl",
 		"./ui/html/top.layout.tmpl",
+		"./ui/html/controls/create.tmpl",
+		"./ui/html/controls/table.tmpl",
+		"./ui/html/controls/list-panel.tmpl",
 	}
 
 	tpl, err := template.ParseFiles(files...)
@@ -157,6 +160,7 @@ func TaskCreateHandler(w http.ResponseWriter, r *http.Request) {
 		"./ui/html/catalog/task-create.page.tmpl",
 		"./ui/html/base.layout.tmpl",
 		"./ui/html/top.layout.tmpl",
+		"./ui/html/controls/save.tmpl",
 	}
 
 	tpl, err := template.ParseFiles(files...)
@@ -176,6 +180,7 @@ func TaskEditHandler(w http.ResponseWriter, r *http.Request) {
 			"./ui/html/catalog/task-create.page.tmpl",
 			"./ui/html/base.layout.tmpl",
 			"./ui/html/top.layout.tmpl",
+			"./ui/html/controls/save.tmpl",
 		}
 
 		tpl, err := template.ParseFiles(files...)
@@ -352,6 +357,9 @@ func CatalogListHandler(w http.ResponseWriter, r *http.Request) {
 		"./ui/html/catalog/catalog-list.page.tmpl",
 		"./ui/html/base.layout.tmpl",
 		"./ui/html/top.layout.tmpl",
+		"./ui/html/controls/create.tmpl",
+		"./ui/html/controls/table.tmpl",
+		"./ui/html/controls/list-panel.tmpl",
 	}
 
 	tpl, err := template.ParseFiles(files...)
@@ -378,6 +386,7 @@ func CatalogCreateHandler(w http.ResponseWriter, r *http.Request) {
 		"./ui/html/catalog/catalog-create.page.tmpl",
 		"./ui/html/base.layout.tmpl",
 		"./ui/html/top.layout.tmpl",
+		"./ui/html/controls/save.tmpl",
 	}
 
 	tpl, err := template.ParseFiles(files...)

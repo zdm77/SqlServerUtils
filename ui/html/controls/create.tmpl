@@ -1,0 +1,10 @@
+{{define "create"}}
+
+    <button class="btn btn-primary bi bi-plus-circle "
+            style="font-size:14px;"
+            onclick="create()">
+        <span style="margin-left: 3px">Создать</span></button>
+        <script>
+            console.log({{ .}})
+        </script>
+{{end}}
