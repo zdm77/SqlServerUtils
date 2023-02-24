@@ -1,15 +1,4 @@
-<head>
-    <script src="/static/js/xlsx.min.js"/>
-    <script>
 
-    </script>
-</head>
-{{/*<script>*/}}
-{{/*    {{if .Name}}*/}}
-{{/*    //document.getElementById("nameTask").val=5*/}}
-
-{{/*    {{end}}*/}}
-{{/*</script>*/}}
 {{template "base" .}}
 
 {{define "main"}}
@@ -142,78 +131,6 @@
                     });
             }
 
-            function upload() {
-                var files = document.getElementById('file_upload').files;
-                if (files.length == 0) {
-                    alert("Please choose any file...");
-                    return;
-                }
-                var filename = files[0].name;
-                var extension = filename.substring(filename.lastIndexOf(".")).toUpperCase();
-                if (extension == '.XLS' || extension == '.XLSX') {
-                    //Here calling another method to read excel file into json
-                    excelFileToJSON(files[0]);
-                } else {
-                    alert("Please select a valid excel file.");
-                }
-            }
-
-
-            function excelFileToJSON(file) {
-                dataParams = []
-                try {
-                    let reader = new FileReader();
-                    reader.readAsBinaryString(file);
-                    reader.onload = function (e) {
-                        let data = e.target.result;
-                        let workbook = XLSX.read(data, {
-                                type: 'binary'
-                            }
-                        );
-
-                        let headers = []
-                        let firstSheetName = workbook.SheetNames[0];
-                        //reading only first sheet data
-                        let jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName]);
-                        //displaying the json result into HTML table
-                        let from = document.getElementById('str_header').value
-
-                        //  for (let i = from - 1; i < jsonData.length; i++) {
-                        // let dataJson = JSON.stringify(jsonData[from - 2]);
-                        let myMap = new Map(Object.entries(jsonData[from - 2]));
-                        let htmlData = ''
-                        let table = document.getElementById("json_data");
-                        let counter = 0
-                        for (let headA of myMap.values()) {
-                            counter++
-                            let head = headA.replaceAll('"', "")
-
-                            headers.push(head)
-                            dataParams.push({
-                                task_id: {{ .Id}},
-                                id: counter,
-                                field_excel: head,
-                                field_db: '',
-                                col_number: counter,
-                            })
-
-                            htmlData += '<tr><td>' + head + '</td><td><input class="form-control" id=val' + counter + '></td> ' +
-                                '<td>' +
-                                ' <select id=tp' + counter + ' name="task" class="form-select">' +
-
-                                ' <option value="Строка">Строка</option>' +
-                                ' <option value="Число">Число</option>' +
-                                ' <option value="Дата">Дата</option> ' +
-                                '</select>'
-                            '</td>' +
-                            '</tr>'
-                        }
-                        table.innerHTML = htmlData;
-                    }
-                } catch (e) {
-                    console.error(e);
-                }
-            }
 
             function renderData() {
                 fetch('/api/task-params',
@@ -257,7 +174,7 @@
                             counter++
                         }
                         table.innerHTML = htmlData;
-                        console.log(dataParams)
+
                     });
             }
 
@@ -272,6 +189,7 @@
                         if (el) {
                             item.field_type = el.value
                         }
+                        item.task_id =id
 
                     }
                     dataParamsResult.push(item)
@@ -296,18 +214,21 @@
                     .then(response => response.json())
                     .then((response) => {
                         let txtArr = response.text.split("-")
-                        console.log(txtArr)
-                        console.log(txtArr[1])
-                        if (txtArr[0] == "ok") {
+
+                        if (txtArr[0] === "ok") {
                             if (!id) {
+                                console.log('обновляем')
                                 id = Number(txtArr[1])
+                                console.log(id)
                                 for (let i = 0; i < dataParamsResult.length; i++) {
                                     dataParamsResult[i].task_id=id
+                                    console.log(    dataParamsResult[i].task_id)
                                 }
                             }
-
+                            console.log('таблица')
                             //Сохраняем таблицу
                             if (dataParams.length > 0) {
+
                                 fetch('/api/task-save-params',
                                     {
                                         method: 'PUT',

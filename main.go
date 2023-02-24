@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"sqlutils/backend/route"
+	"sqlutils/backend/route/task-route"
 )
 
 func main() {
@@ -24,21 +25,21 @@ func main() {
 	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
 	mux.HandleFunc("/", route.Login)
 	mux.HandleFunc("/main", route.DoLogin)
-	mux.HandleFunc("/task1", route.Task1Handler)
-	mux.HandleFunc("/task-list", route.TaskListHandler)
+	mux.HandleFunc("/task1", task_route.Task1Handler)
+	mux.HandleFunc("/task-list", task_route.TaskListHandler)
 	mux.HandleFunc("/catalog-list", route.CatalogListHandler)
-	mux.HandleFunc("/task-create", route.TaskCreateHandler)
+	mux.HandleFunc("/task-create", task_route.TaskCatalogCreateHandler)
 	mux.HandleFunc("/task-edit/", route.TaskEditHandler)
 
 	mux.HandleFunc("/catalog-create", route.CatalogCreateHandler)
 
 	//api
-	mux.HandleFunc("/api/task-list", route.GetTaskListHandler)
-	mux.HandleFunc("/api/task-params", route.GetTaskParamsHandler)
-	mux.HandleFunc("/api/task-save", route.TaskSaveHandler)
-	mux.HandleFunc("/api/task-save-params", route.TaskSaveParamsHandler)
-	mux.HandleFunc("/api/upload", route.TaskUploadHandler)
-	mux.HandleFunc("/api/task-exe", route.TaskExeHandler)
+	mux.HandleFunc("/api/task-list", task_route.GetTaskCatalogListHandler)
+	mux.HandleFunc("/api/task-params", task_route.GetTaskParamsHandler)
+	mux.HandleFunc("/api/task-save", task_route.TaskSaveHandler)
+	mux.HandleFunc("/api/task-save-params", task_route.TaskSaveParamsHandler)
+	mux.HandleFunc("/api/upload", task_route.TaskUploadHandler)
+	mux.HandleFunc("/api/task-exe", task_route.TaskExeHandler)
 	mux.HandleFunc("/api/catalog-list", route.GetCatalogListHandler)
 	mux.HandleFunc("/api/catalog-save", route.CatalogSaveHandler)
 	//mux.HandleFunc("/login", route.Login)

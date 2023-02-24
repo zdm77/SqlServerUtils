@@ -8,7 +8,7 @@ import (
 	"strconv"
 )
 
-func GetTaskList(user *model.User) (result []model.Task) {
+func GetTaskCatalogList(user *model.User) (result []model.Task) {
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
 	query := `select  id, name, table_db,  str_header from utils_task_catalog order by id`
@@ -28,7 +28,7 @@ func GetTaskList(user *model.User) (result []model.Task) {
 	}
 	return result
 }
-func GetTaskById(user *model.User, id int) (r model.Task) {
+func GetTaskCatalogById(user *model.User, id int) (r model.Task) {
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
 	query := `select  id, name, table_db, coalesce(str_header, 1) from utils_task_catalog where id = @Id`
@@ -42,7 +42,7 @@ func GetTaskById(user *model.User, id int) (r model.Task) {
 
 	return r
 }
-func SaveTask(user *model.User, task model.Task) (err error, id int) {
+func SaveTaskCatalog(user *model.User, task model.Task) (err error, id int) {
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
 	var query string
@@ -68,7 +68,7 @@ func SaveTask(user *model.User, task model.Task) (err error, id int) {
 	return err, id
 }
 
-func SaveTaskParams(user *model.User, params []model.TaskParams) (err error) {
+func SaveTaskCatalogParams(user *model.User, params []model.TaskParams) (err error) {
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
 	var query string
@@ -95,7 +95,7 @@ values (@task_id, @field_excel, @field_db, @col_number, @field_type)`
 	return err
 }
 
-func GetTaskParams(user *model.User, id int, isValue bool) (result []model.TaskParams) {
+func GetTaskCatalogParams(user *model.User, id int, isValue bool) (result []model.TaskParams) {
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
 	query := `select   task_id, field_excel, field_db, col_number, field_type from utils_settings_task where task_id=` + strconv.Itoa(id)
