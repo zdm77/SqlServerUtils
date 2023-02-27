@@ -2,18 +2,14 @@ package route
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
 	"sqlutils/backend/database"
-	db_task "sqlutils/backend/database/db-task"
-	"sqlutils/backend/database/db_catalog"
 	"sqlutils/backend/model"
 	"sqlutils/backend/session"
-	"strconv"
 	"strings"
 )
 
@@ -99,96 +95,4 @@ func ReturnToLogin(w http.ResponseWriter) {
 	var tpl = template.Must(template.ParseFiles("./ui/html/login.page.tmpl"))
 	data := ""
 	tpl.Execute(w, data)
-}
-
-func TaskEditHandler(w http.ResponseWriter, r *http.Request) {
-	user := session.GetSessionData(r)
-	if user != nil {
-		keys := r.URL.Query()
-		id, err := strconv.Atoi(keys.Get("id"))
-		task := db_task.GetTaskCatalogById(user, id)
-		files := []string{
-			"./ui/html/catalog/task-create.page.tmpl",
-			"./ui/html/base.layout.tmpl",
-			"./ui/html/top.layout.tmpl",
-			"./ui/html/controls/save.tmpl",
-		}
-
-		tpl, err := template.ParseFiles(files...)
-		if err != nil {
-			log.Println(err.Error())
-		}
-		//		data, _ := json.Marshal(task)
-
-		tpl.Execute(w, task)
-	} else {
-		data, _ := json.Marshal(Message{Text: "not-login"})
-		w.Write(data)
-	}
-}
-
-func CatalogListHandler(w http.ResponseWriter, r *http.Request) {
-	files := []string{
-		"./ui/html/catalog/catalog-list.page.tmpl",
-		"./ui/html/base.layout.tmpl",
-		"./ui/html/top.layout.tmpl",
-		"./ui/html/controls/create.tmpl",
-		"./ui/html/controls/table.tmpl",
-		"./ui/html/controls/list-panel.tmpl",
-	}
-
-	tpl, err := template.ParseFiles(files...)
-	if err != nil {
-		log.Println(err.Error())
-	}
-
-	tpl.Execute(w, nil)
-}
-func GetCatalogListHandler(w http.ResponseWriter, r *http.Request) {
-	user := session.GetSessionData(r)
-	if user != nil {
-
-		list := db_catalog.GetCatalogList(user)
-		data, _ := json.Marshal(list)
-		w.Write(data)
-	} else {
-		data, _ := json.Marshal(Message{Text: "not-login"})
-		w.Write(data)
-	}
-}
-func CatalogCreateHandler(w http.ResponseWriter, r *http.Request) {
-	files := []string{
-		"./ui/html/catalog/catalog-create.page.tmpl",
-		"./ui/html/base.layout.tmpl",
-		"./ui/html/top.layout.tmpl",
-		"./ui/html/controls/save.tmpl",
-	}
-
-	tpl, err := template.ParseFiles(files...)
-	if err != nil {
-		log.Println(err.Error())
-	}
-
-	tpl.Execute(w, nil)
-}
-func CatalogSaveHandler(w http.ResponseWriter, r *http.Request) {
-	user := session.GetSessionData(r)
-	if user != nil {
-		decoder := json.NewDecoder(r.Body)
-		var param model.Catalog
-		err := decoder.Decode(&param)
-		if err != nil {
-			log.Println(err.Error())
-		} else {
-			err, id := db_catalog.SaveCatalog(user, param)
-			if err != nil && err.Error() != "sql: no rows in result set" {
-				data, _ := json.Marshal(Message{Text: err.Error()})
-				w.Write(data)
-			} else {
-				data, _ := json.Marshal(Message{Text: "ok-" + strconv.Itoa(id)})
-				w.Write(data)
-			}
-		}
-
-	}
 }

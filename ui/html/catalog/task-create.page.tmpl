@@ -1,4 +1,3 @@
-
 {{template "base" .}}
 
 {{define "main"}}
@@ -63,10 +62,11 @@
             });
             let selectFile = document.getElementById('file_upload')
             selectFile.addEventListener('change', function () {
-               uploadToServ()
+                uploadToServ()
 
             });
             let btnSave = document.getElementById('btnSave')
+
             function valid() {
                 if (isNaN(strHeader.value)) {
                     alert('Недопустимое значение. Введите число.')
@@ -82,6 +82,7 @@
                     }
                 }
             }
+
             valid()
             let dataParams = []
             renderData()
@@ -94,7 +95,7 @@
                 const strHeaderVal = document.getElementById('str_header').value
                 let files = document.getElementById('file_upload').files
                 data.append('file', files[0]);
-             //   data.append('task_id', {{ .Id}});
+                //   data.append('task_id', {{ .Id}});
                 data.append('str_header', strHeaderVal);
                 data.append('only_headers', 'true');
                 let table = document.getElementById("json_data");
@@ -189,7 +190,7 @@
                         if (el) {
                             item.field_type = el.value
                         }
-                        item.task_id =id
+                        item.task_id = id
 
                     }
                     dataParamsResult.push(item)
@@ -217,18 +218,13 @@
 
                         if (txtArr[0] === "ok") {
                             if (!id) {
-                                console.log('обновляем')
                                 id = Number(txtArr[1])
-                                console.log(id)
                                 for (let i = 0; i < dataParamsResult.length; i++) {
-                                    dataParamsResult[i].task_id=id
-                                    console.log(    dataParamsResult[i].task_id)
+                                    dataParamsResult[i].task_id = id
                                 }
                             }
-                            console.log('таблица')
                             //Сохраняем таблицу
                             if (dataParams.length > 0) {
-
                                 fetch('/api/task-save-params',
                                     {
                                         method: 'PUT',
@@ -255,6 +251,7 @@
                         }
                     });
             }
+
             let id = {{ .Id}}
         </script>
     </main>

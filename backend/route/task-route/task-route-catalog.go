@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-func TaskListHandler(w http.ResponseWriter, r *http.Request) {
+func TaskListCatalogHandler(w http.ResponseWriter, r *http.Request) {
 	files := []string{
 		"./ui/html/catalog/task-list.page.tmpl",
 		"./ui/html/base.layout.tmpl",
@@ -173,7 +173,7 @@ func TaskUploadHandler(w http.ResponseWriter, r *http.Request) {
 	//os.RemoveAll(tmpDir)
 
 }
-func TaskSaveHandler(w http.ResponseWriter, r *http.Request) {
+func TaskCatalogSaveHandler(w http.ResponseWriter, r *http.Request) {
 	user := session.GetSessionData(r)
 	if user != nil {
 		decoder := json.NewDecoder(r.Body)
@@ -192,5 +192,29 @@ func TaskSaveHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
+	}
+}
+func TaskCatalogEditHandler(w http.ResponseWriter, r *http.Request) {
+	user := session.GetSessionData(r)
+	if user != nil {
+		keys := r.URL.Query()
+		id, err := strconv.Atoi(keys.Get("id"))
+		task := db_task.GetTaskCatalogById(user, id)
+		files := []string{
+			"./ui/html/catalog/task-create.page.tmpl",
+			"./ui/html/base.layout.tmpl",
+			"./ui/html/top.layout.tmpl",
+			"./ui/html/controls/save.tmpl",
+		}
+
+		tpl, err := template.ParseFiles(files...)
+		if err != nil {
+			log.Println(err.Error())
+		}
+
+		tpl.Execute(w, task)
+	} else {
+		data, _ := json.Marshal(route.Message{Text: "not-login"})
+		w.Write(data)
 	}
 }

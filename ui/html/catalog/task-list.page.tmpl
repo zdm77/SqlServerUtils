@@ -12,7 +12,7 @@
         </div>
         <script>
             function create() {
-                document.location = '/task-create'
+                document.location = '/task-catalog-create'
             }
 
             fetch('/api/task-list',
@@ -30,7 +30,7 @@
                         let htmlData = '<tr><th>Наименование</th><th>Таблица БД</th></tr>';
                         response.map(function (item) {
                             htmlData += '<tr>' +
-                                '<td><a href="/task-edit/?id=$id">' + item.name + '</a> </td>' +
+                                '<td><a href="/task-catalog-edit/?id=$id">' + item.name + '</a> </td>' +
                                 '<td>' + item.table_db + '</td>' +
                                 '<td width="32px"><i class="bi-trash text-danger" style="cursor: pointer"' +
                                 ' onclick="deleteTask(' + item.id + ')"></i></td>' +

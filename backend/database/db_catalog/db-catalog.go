@@ -2,21 +2,23 @@ package db_catalog
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"sqlutils/backend/database"
 	"sqlutils/backend/model"
+	"strconv"
 )
 
-func GetDbTableFields(tableName string) {
+func GetDbTableFields(user *model.User, tableName string) (fields []model.Field, err error) {
 	query := `SELECT 
-    c.name col_name,
-    t.Name col_type,
-    c.max_length 'Max Length',
+    c.name ,
+    t.Name ,
+    c.max_length,
     c.precision ,
     c.scale ,
     c.is_nullable,
-    ISNULL(i.is_primary_key, 0) 'Primary Key'
+     c.is_identity,
+    ISNULL(i.is_primary_key, 0) ,
+     c.is_nullable
 FROM    
     sys.columns c
 INNER JOIN 
@@ -27,7 +29,17 @@ LEFT OUTER JOIN
     sys.indexes i ON ic.object_id = i.object_id AND ic.index_id = i.index_id
 WHERE
     c.object_id = OBJECT_ID('` + tableName + `')`
-	fmt.Println(query)
+	db, err := database.GetDb(user.ConnString)
+	defer db.Close()
+	rows, err := db.Query(query)
+	defer rows.Close()
+	for rows.Next() {
+		var f model.Field
+		err = rows.Scan(&f.NameDb, &f.NameType, &f.MaxLength, &f.Precision, &f.Scale, &f.IsNullable, &f.IsIdentity, &f.IsPrimaryKey, &f.IsNullableDb)
+		fields = append(fields, f)
+	}
+
+	return fields, err
 }
 func GetCatalogList(user *model.User) (result []model.Catalog) {
 	db, _ := database.GetDb(user.ConnString)
@@ -72,4 +84,122 @@ func SaveCatalog(user *model.User, param model.Catalog) (err error, id int) {
 	}
 
 	return err, id
+}
+func GetCatalogById(user *model.User, id int) (r model.Catalog) {
+	db, _ := database.GetDb(user.ConnString)
+	defer db.Close()
+	//основа
+	query := `select  id, name, table_name from utils_catalog_list where id = @Id`
+
+	stmt, err := db.Prepare(query)
+	row := stmt.QueryRow(sql.Named("Id", id))
+
+	err = row.Scan(&r.Id, &r.Name, &r.TableName)
+	if err != nil {
+		log.Println(err.Error())
+	}
+
+	//табличная часть
+	query = `select id, name, catalog_id, name_db, name_type, max_length, precision, scale, is_nullable, is_identity, is_primary_key, is_nullable_db 
+			from utills_catalog_fields where catalog_id=` + strconv.Itoa(id)
+	rows, err := db.Query(query)
+	defer rows.Close()
+	var names []string
+	for rows.Next() {
+		var f model.Field
+		err = rows.Scan(&f.Id, &f.Name, &f.CatalogId, &f.NameDb, &f.NameType, &f.MaxLength, &f.Precision, &f.Scale, &f.IsNullable, &f.IsIdentity, &f.IsPrimaryKey, &f.IsNullableDb)
+		r.Fields = append(r.Fields, f)
+		names = append(names, f.NameDb)
+	}
+	//если появились новые поля
+	fieldsDb, err := GetDbTableFields(user, r.TableName)
+
+	for _, field := range fieldsDb {
+		isNew := implContains(names, field.NameDb)
+		if isNew == -1 {
+			var newId int
+			var stmt *sql.Stmt
+			query = `insert into utills_catalog_fields (name, catalog_id, name_db, name_type, max_length, precision, scale, is_nullable, is_identity, is_primary_key, is_nullable_db) values
+					(@name, @catalog_id, @name_db, @name_type, @max_length, @precision, @scale, @is_nullable, @is_identity, @is_primary_key, @is_nullable_db);  SELECT SCOPE_IDENTITY()`
+			stmt, _ = db.Prepare(query)
+			err = stmt.QueryRow(
+				sql.Named("name", field.Name),
+				sql.Named("catalog_id", id),
+				sql.Named("name_db", field.NameDb),
+				sql.Named("name_type", field.NameType),
+				sql.Named("max_length", field.MaxLength),
+				sql.Named("precision", field.Precision),
+				sql.Named("scale", field.Scale),
+				sql.Named("is_nullable", field.IsNullable),
+				sql.Named("is_identity", field.IsIdentity),
+				sql.Named("is_primary_key", field.IsPrimaryKey),
+				sql.Named("is_nullable_db", field.IsNullableDb),
+
+			).Scan(&newId)
+			field.Id = newId
+			r.Fields = append(r.Fields, field)
+			if err != nil {
+				log.Println(err.Error())
+			}
+		}
+	}
+
+	return r
+}
+
+func implContains(sl []string, name string) int {
+
+	for index, value := range sl {
+		if value == name {
+
+			return index
+		}
+	}
+
+	return -1
+}
+func SaveCatalogFields(user *model.User, fields []model.Field) (err error) {
+	db, _ := database.GetDb(user.ConnString)
+	//tx, _ := db.Begin()
+	defer db.Close()
+	var query string
+	var catalogId = fields[0].CatalogId
+	var isNew int
+	query = `select count(id) from utills_catalog_fields where catalog_id=` + strconv.Itoa(catalogId)
+	err = db.QueryRow(query).Scan(&isNew)
+	if isNew == 0 {
+		query = `insert into utills_catalog_fields (name, catalog_id, name_db, name_type, max_length, precision, scale, is_nullable, is_identity, is_primary_key, is_nullable_db) values
+					(@name, @catalog_id, @name_db, @name_type, @max_length, @precision, @scale, @is_nullable, @is_identity, @is_primary_key, @is_nullable_db)`
+	} else {
+		query = `update utills_catalog_fields set name=@name, catalog_id=@catalog_id, name_db= @name_db, name_type = @name_type,
+                                 max_length = @max_length, precision = @precision, scale = @scale, is_nullable = @is_nullable , 
+                                 is_identity = @is_identity,  is_nullable_db=@is_nullable_db, is_primary_key = @is_primary_key where id=@id`
+	}
+
+	var stmt *sql.Stmt
+	for _, field := range fields {
+		stmt, _ = db.Prepare(query)
+		_, err = stmt.Exec(
+			sql.Named("id", field.Id),
+			sql.Named("name", field.Name),
+			sql.Named("catalog_id", catalogId),
+			sql.Named("name_db", field.NameDb),
+			sql.Named("name_type", field.NameType),
+			sql.Named("max_length", field.MaxLength),
+			sql.Named("precision", field.Precision),
+			sql.Named("scale", field.Scale),
+			sql.Named("is_nullable", field.IsNullable),
+			sql.Named("is_identity", field.IsIdentity),
+			sql.Named("is_primary_key", field.IsPrimaryKey),
+			sql.Named("is_nullable_db", field.IsNullableDb),
+
+		)
+		if err != nil {
+			log.Println(err.Error())
+		}
+	}
+	return err
+}
+func GetCatalogFieldsByCatalogId(user *model.User) {
+
 }

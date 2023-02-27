@@ -17,17 +17,23 @@
                             </div>
                             <div class="col-sm">
                                 <label for="table_db" class="form-label">Таблица БД</label>
-                                <input class="form-control" id="table_name" value={{ .TableDb}}>
+                                <input class="form-control" id="table_name" value={{ .TableName}}>
                             </div>
                         </div>
                     </li>
                 </ul>
             </form>
-            <div class="col-6">
-                {{template "save"}}
-            </div>
-            <table id="json_data"
-                   class="table table-striped table-bordered table-sm table-responsive"></table>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item">
+                    <div class="col-6">
+                        {{template "save"}}
+                    </div>
+                </li>
+                <li class="list-group-item">
+                    <table id="json_data"
+                           class="table table-striped table-bordered table-sm table-responsive"></table>
+                </li>
+            </ul>
         </div>
         <script>
             const name = document.getElementById('name')
@@ -40,6 +46,9 @@
                 valid()
 
             });
+            const table = document.getElementById('json_data')
+            let fields = {{ .Fields}}
+            if (fields && fields.length > 0) renderTable()
 
             function valid() {
                 if (name.value === '' || tableDb.value === '') {
@@ -50,9 +59,76 @@
             }
 
             valid()
+            // function setFieldsFromTable(){
+            //     fields=''
+            // }
+            function setValuesFields() {
+                for (let i = 0; i < fields.length; i++) {
+                    let elem = document.getElementById('valName' + i)
+                    if (elem) {
+                        fields[i].name = elem.value
+                    }
+                    elem = document.getElementById('notNull' + i)
+                    if (elem) {
+                        fields[i].is_nullable = !elem.checked
+                    }
+                }
+            }
 
-            function save() {
-                fetch('/api/catalog-save',
+            function renderTable() {
+
+                let html = ''
+                let counter = 0
+                html += '<th>Поле</th>'
+                html += '<th>Наименование</th>'
+                html += '<th width="60px">Обязательное</th>'
+                html += '<th>Тип</th>'
+                html += '<th>Точность</th>'
+                html += '<th>Масштаб</th>'
+                html += '<th>Счетчик</th>'
+
+
+                fields.map(function (item) {
+
+
+                    html += '<tr>' +
+                        '<td>' + item.name_db + '</td>' +
+                        '<td><input  class="form-control" id=valName' + counter + ' value="' + item.name +'"'
+                    if (item.is_identity) html += ' disabled '
+                    html += '></td>'
+                    html += '<td style="text-align: center">'
+
+                    if (item.is_nullable_db) {
+                        html += '<div class="form-check form-switch">' +
+                            '<input  class="form-check-input mx-auto" style="font-size: 24px" type="checkbox"  id=notNull' + counter
+
+                        if (!item.is_nullable) html += ' checked '
+                        html += '></div>'
+                    } else {
+
+                        html += '<i class="bi bi-check2" style="font-size: 25px"></i>'
+                    }
+
+
+                    html += '</td>'
+                    html += '<td>' + item.name_type + '</td>' +
+                        '<td>' + item.precision + '</td>' +
+                        '<td>' + item.scale + '</td>'
+
+                    html += item.is_identity ? '<td  style="text-align: center"><i class="bi bi-check2"></i> </td>' : '<td></td>';
+
+
+                    html += '</tr>'
+                    counter++
+
+                })
+
+                table.innerHTML = html
+            }
+
+            function getFields(isNew) {
+                fields = []
+                fetch('/api/get-db-fields',
                     {
                         method: 'POST',
                         headers: {
@@ -60,6 +136,29 @@
                         },
                         body: JSON.stringify({
                             id: id,
+                            name: tableDb.value,
+
+
+                        })
+                    })
+                    .then(response => response.json())
+                    .then((response) => {
+                        fields = response
+                        fields[0].catalog_id = id
+                        renderTable()
+                    })
+            }
+
+            function save() {
+
+                fetch('/api/catalog-save',
+                    {
+                        method: 'POST',
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            id: id ? id : 0,
                             name: name.value,
                             table_name: tableDb.value,
 
@@ -67,10 +166,40 @@
                     })
                     .then(response => response.json())
                     .then((response) => {
-                            
+
+                        let txtArr = response.text.split("-")
+
+                        if (txtArr[0] === "ok") {
+                            if (!id) {
+                                id = Number(txtArr[1])
+                                getFields(true)
+
+                            } else {
+                                setValuesFields()
+
+                                fetch('/api/save-db-fields',
+                                    {
+                                        method: 'POST',
+                                        headers: {
+                                            "Content-Type": "application/json"
+                                        },
+                                        body: JSON.stringify(fields)
+                                    })
+                                    .then(response => response.json())
+                                    .then((response) => {
+
+                                    })
+                            }
+
+
+                        } else {
+                            alert("Ошибка: " + response.text)
+                        }
                     })
+
             }
 
+            {{/*console.log({{ .Fields}})*/}}
             let id = {{ .Id}}
         </script>
     </main>

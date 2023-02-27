@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"sqlutils/backend/route"
+	catalog_route "sqlutils/backend/route/catalog-route"
 	"sqlutils/backend/route/task-route"
 )
 
@@ -25,23 +26,36 @@ func main() {
 	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
 	mux.HandleFunc("/", route.Login)
 	mux.HandleFunc("/main", route.DoLogin)
-	mux.HandleFunc("/task1", task_route.Task1Handler)
-	mux.HandleFunc("/task-list", task_route.TaskListHandler)
-	mux.HandleFunc("/catalog-list", route.CatalogListHandler)
-	mux.HandleFunc("/task-create", task_route.TaskCatalogCreateHandler)
-	mux.HandleFunc("/task-edit/", route.TaskEditHandler)
+	//*********Каталог****************////////////////
+	//*********Задачи***//
+	mux.HandleFunc("/task-list-catalog", task_route.TaskListCatalogHandler)
+	mux.HandleFunc("/task-catalog-create", task_route.TaskCatalogCreateHandler)
+	mux.HandleFunc("/task-catalog-edit/", task_route.TaskCatalogEditHandler)
 
-	mux.HandleFunc("/catalog-create", route.CatalogCreateHandler)
-
-	//api
+	//****Каталог Задачи api
 	mux.HandleFunc("/api/task-list", task_route.GetTaskCatalogListHandler)
 	mux.HandleFunc("/api/task-params", task_route.GetTaskParamsHandler)
-	mux.HandleFunc("/api/task-save", task_route.TaskSaveHandler)
+	mux.HandleFunc("/api/task-save", task_route.TaskCatalogSaveHandler)
 	mux.HandleFunc("/api/task-save-params", task_route.TaskSaveParamsHandler)
+
+	//********Справочники*************//
+	mux.HandleFunc("/catalog-list", catalog_route.CatalogListHandler)
+	mux.HandleFunc("/catalog-create", catalog_route.CatalogCreateHandler)
+	mux.HandleFunc("/catalog-edit/", catalog_route.CatalogEditHandler)
+
+	//*******Справочники api
+	mux.HandleFunc("/api/catalog-list", catalog_route.GetCatalogListHandler)
+	mux.HandleFunc("/api/catalog-save", catalog_route.CatalogSaveHandler)
+	mux.HandleFunc("/api/get-db-fields", catalog_route.GetDbFieldsHandler)
+	mux.HandleFunc("/api/save-db-fields", catalog_route.SaveDbFieldsHandler)
+
+	mux.HandleFunc("/task1", task_route.Task1Handler)
+
+	//api
+
 	mux.HandleFunc("/api/upload", task_route.TaskUploadHandler)
 	mux.HandleFunc("/api/task-exe", task_route.TaskExeHandler)
-	mux.HandleFunc("/api/catalog-list", route.GetCatalogListHandler)
-	mux.HandleFunc("/api/catalog-save", route.CatalogSaveHandler)
+
 	//mux.HandleFunc("/login", route.Login)
 	host, _ := os.Hostname()
 	log.Println("Сервер запущен: http://" + host + ":8080")
