@@ -20,4 +20,5 @@ type Field struct {
 	IsIdentity   bool   `json:"is_identity"`
 	IsPrimaryKey bool   `json:"is_primary_key"`
 	Name         string `json:"name"`
+	Value        string `json:"value"`
 }

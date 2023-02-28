@@ -1,0 +1,73 @@
+{{template "base" .}}
+
+{{define "main"}}
+    <main class="form-main">
+        <div class="card">
+            <div class="card-header" id="cardHeader">
+            </div>
+            {{template "list-panel"}}
+        </div>
+        <script>
+            function create() {
+                document.location = '/catalog-work-create/?id=' +id
+            }
+            function refresh() {
+                renderTable()
+            }
+
+
+
+            function renderTable() {
+                let table = document.getElementById("json_data");
+                table.innerHTML = ''
+
+                let html = ''
+                fetch('/api/catalog-work-list',
+                    {
+                        method: 'POST',
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            id: id ,
+
+                        })
+
+                    })
+                    .then(response => response.json())
+                    .then((response) => {
+                        if (response.text != 'not-login') {
+                            document.getElementById('cardHeader').innerText =response.name_catalog
+                            id =response.catalog_id
+                            response.headers.map(function (item) {
+                                console.log(item)
+                                html += '<th>' + item + '</th> '
+
+                            })
+
+                            let vals = response.vals
+                            for (let i = 0; i < vals.length; i++) {
+                                let row = vals[i]
+                                html += '<tr>'
+                                for (let j = 0; j < row.length; j++) {
+                                    let val = row[j].replaceAll('"', '')
+                                    html += '<td>' + val + '</td>'
+                                }
+                                html += '</tr>'
+                            }
+                        }
+                        table.innerHTML = html
+                    })
+
+
+            }
+
+
+            function deleteTask(id) {
+                alert(id)
+            }
+            let id = {{ .}}
+            renderTable()
+        </script>
+    </main>
+{{end}}

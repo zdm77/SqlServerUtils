@@ -1,13 +1,16 @@
 package main
 
 import (
+	"bufio"
 	_ "github.com/denisenkom/go-mssqldb"
 	"log"
 	"net/http"
 	"os"
 	"sqlutils/backend/route"
 	catalog_route "sqlutils/backend/route/catalog-route"
+	catalog_work_route "sqlutils/backend/route/catalog-work-route"
 	"sqlutils/backend/route/task-route"
+	"strings"
 )
 
 func main() {
@@ -51,15 +54,35 @@ func main() {
 
 	mux.HandleFunc("/task1", task_route.Task1Handler)
 
-	//api
+	//Заполнение справочников
+	mux.HandleFunc("/catalog-work-list/", catalog_work_route.CatalogWorkListHandler)
+	mux.HandleFunc("/catalog-work-create/", catalog_work_route.CatalogWorkCreateHandler)
+	mux.HandleFunc("/api/catalog-work-save", catalog_work_route.CatalogWorkSaveHandler)
+	mux.HandleFunc("/api/catalog-work-list", catalog_work_route.CatalogGetWorkListHandler)
 
 	mux.HandleFunc("/api/upload", task_route.TaskUploadHandler)
 	mux.HandleFunc("/api/task-exe", task_route.TaskExeHandler)
 
 	//mux.HandleFunc("/login", route.Login)
 	host, _ := os.Hostname()
-	log.Println("Сервер запущен: http://" + host + ":8080")
-	err = http.ListenAndServe(":8080", mux)
+
+	file, err := os.Open("settings.txt")
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	defer file.Close()
+	sc := bufio.NewScanner(file)
+	port := ""
+	for sc.Scan() {
+		cont := strings.Contains(sc.Text(), "WebPort")
+		if cont {
+			port = strings.Split(sc.Text(), "=")[1]
+		}
+
+	}
+	file.Close()
+	log.Println("Сервер запущен: http://" + host + ":" + port)
+	err = http.ListenAndServe(":"+port, mux)
 
 	if err != nil {
 		log.Fatal(err.Error())

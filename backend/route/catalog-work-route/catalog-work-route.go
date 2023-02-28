@@ -1,0 +1,106 @@
+package catalog_work_route
+
+import (
+	"encoding/json"
+	"html/template"
+	"log"
+	"net/http"
+	db_catalog_work "sqlutils/backend/database/db-catalog-work"
+	"sqlutils/backend/database/db_catalog"
+	"sqlutils/backend/model"
+	"sqlutils/backend/route"
+	"sqlutils/backend/session"
+	"strconv"
+)
+
+func CatalogWorkListHandler(w http.ResponseWriter, r *http.Request) {
+	user := session.GetSessionData(r)
+	if user != nil {
+		keys := r.URL.Query()
+		id, err := strconv.Atoi(keys.Get("id"))
+		//	_, data := db_catalog_work.GetCatalogWorkListById(user, id)
+		files := []string{
+			"./ui/html/catalog-work/catalog-work-list.page.tmpl",
+			"./ui/html/base.layout.tmpl",
+			"./ui/html/top.layout.tmpl",
+			"./ui/html/controls/create.tmpl",
+			"./ui/html/controls/table.tmpl",
+			"./ui/html/controls/list-panel.tmpl",
+		}
+
+		tpl, err := template.ParseFiles(files...)
+		if err != nil {
+			log.Println(err.Error())
+		}
+
+		tpl.Execute(w, id)
+	} else {
+		data, _ := json.Marshal(route.Message{Text: "not-login"})
+		w.Write(data)
+	}
+}
+func CatalogGetWorkListHandler(w http.ResponseWriter, r *http.Request) {
+	user := session.GetSessionData(r)
+	if user != nil {
+		decoder := json.NewDecoder(r.Body)
+		type Id struct {
+			Id int `json:"id"`
+		}
+		var id Id
+		err := decoder.Decode(&id)
+		if err != nil {
+			log.Println(err.Error())
+		}
+		_, list := db_catalog_work.GetCatalogWorkListById(user, id.Id)
+		data, _ := json.Marshal(list)
+		w.Write(data)
+	} else {
+		data, _ := json.Marshal(route.Message{Text: "not-login"})
+		w.Write(data)
+	}
+}
+func CatalogWorkCreateHandler(w http.ResponseWriter, r *http.Request) {
+	user := session.GetSessionData(r)
+	if user != nil {
+		keys := r.URL.Query()
+		id, err := strconv.Atoi(keys.Get("id"))
+		data := db_catalog.GetCatalogById(user, id)
+		files := []string{
+			"./ui/html/catalog-work/catalog-work-crate.page.tmpl",
+			"./ui/html/base.layout.tmpl",
+			"./ui/html/top.layout.tmpl",
+			"./ui/html/controls/save.tmpl",
+		}
+
+		tpl, err := template.ParseFiles(files...)
+		if err != nil {
+			log.Println(err.Error())
+		}
+
+		tpl.Execute(w, data)
+	} else {
+		data, _ := json.Marshal(route.Message{Text: "not-login"})
+		w.Write(data)
+	}
+}
+func CatalogWorkSaveHandler(w http.ResponseWriter, r *http.Request) {
+	user := session.GetSessionData(r)
+	if user != nil {
+		decoder := json.NewDecoder(r.Body)
+		var param model.Catalog
+		err := decoder.Decode(&param)
+		if err != nil {
+			log.Println(err.Error())
+		} else {
+			err, id := db_catalog_work.SaveCatalogWork(user, param)
+			if err != nil && err.Error() != "sql: no rows in result set" {
+				data, _ := json.Marshal(route.Message{Text: err.Error()})
+				w.Write(data)
+			} else {
+				data, _ := json.Marshal(route.Message{Text: "ok-" + strconv.Itoa(id)})
+				w.Write(data)
+			}
+		}
+
+	}
+}

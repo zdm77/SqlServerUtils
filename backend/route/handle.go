@@ -52,7 +52,7 @@ func DoLogin(w http.ResponseWriter, r *http.Request) {
 		if cont {
 			server = strings.Split(sc.Text(), "=")[1]
 		}
-		cont = strings.Contains(sc.Text(), "Port")
+		cont = strings.Contains(sc.Text(), "DBPort")
 		if cont {
 			port = strings.Split(sc.Text(), "=")[1]
 		}
