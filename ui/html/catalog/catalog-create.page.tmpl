@@ -49,7 +49,7 @@
             const table = document.getElementById('json_data')
             let fields = {{ .Fields}}
             if (fields && fields.length > 0) renderTable()
-
+            console.log(fields)
             function valid() {
                 if (name.value === '' || tableDb.value === '') {
                     btnSave.disabled = true

@@ -9,12 +9,12 @@
         </div>
         <script>
             function create() {
-                document.location = '/catalog-work-create/?id=' +id
+                document.location = '/catalog-work-create/?id=' + id
             }
+
             function refresh() {
                 renderTable()
             }
-
 
 
             function renderTable() {
@@ -29,7 +29,7 @@
                             "Content-Type": "application/json"
                         },
                         body: JSON.stringify({
-                            id: id ,
+                            id: id,
 
                         })
 
@@ -37,12 +37,11 @@
                     .then(response => response.json())
                     .then((response) => {
                         if (response.text != 'not-login') {
-                            document.getElementById('cardHeader').innerText =response.name_catalog
-                            id =response.catalog_id
-                            response.headers.map(function (item) {
-                                console.log(item)
-                                html += '<th>' + item + '</th> '
 
+                            document.getElementById('cardHeader').innerText = response.name_catalog
+                            id = response.catalog_id
+                            response.headers.map(function (item) {
+                                html += '<th>' + item + '</th> '
                             })
 
                             let vals = response.vals
@@ -51,7 +50,21 @@
                                 html += '<tr>'
                                 for (let j = 0; j < row.length; j++) {
                                     let val = row[j].replaceAll('"', '')
-                                    html += '<td>' + val + '</td>'
+                                    html += '<td>'
+                                    if (val === 'checked') {
+                                        html += '<i class="bi bi-check2" style="font-size: 25px"></i>'
+                                    } else {
+                                        if (j === 0) {
+                                            let valId = response.values_id[i].replaceAll('"', '')
+                                            html += '<a href="/catalog-work-edit/?id=' + id + '&entityId=' +valId+'">'
+                                            html += val + '</a> '
+
+                                        } else {
+                                            html += val
+                                        }
+                                    }
+
+                                    html += '</td>'
                                 }
                                 html += '</tr>'
                             }
@@ -66,8 +79,9 @@
             function deleteTask(id) {
                 alert(id)
             }
+
             let id = {{ .}}
-            renderTable()
+                renderTable()
         </script>
     </main>
 {{end}}

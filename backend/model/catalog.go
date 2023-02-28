@@ -2,6 +2,7 @@ package model
 
 type Catalog struct {
 	Id        int     `json:"id"`
+	EntityId  int     `json:"entity_id"`
 	Name      string  `json:"name"`
 	TableName string  `json:"table_name"`
 	Fields    []Field `json:"fields"`

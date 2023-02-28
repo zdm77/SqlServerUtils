@@ -57,6 +57,7 @@ func main() {
 	//Заполнение справочников
 	mux.HandleFunc("/catalog-work-list/", catalog_work_route.CatalogWorkListHandler)
 	mux.HandleFunc("/catalog-work-create/", catalog_work_route.CatalogWorkCreateHandler)
+	mux.HandleFunc("/catalog-work-edit/", catalog_work_route.CatalogWorkEditHandler)
 	mux.HandleFunc("/api/catalog-work-save", catalog_work_route.CatalogWorkSaveHandler)
 	mux.HandleFunc("/api/catalog-work-list", catalog_work_route.CatalogGetWorkListHandler)
 

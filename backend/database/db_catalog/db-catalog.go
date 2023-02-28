@@ -2,10 +2,12 @@ package db_catalog
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"sqlutils/backend/database"
 	"sqlutils/backend/model"
 	"strconv"
+	"strings"
 )
 
 func GetDbTableFields(user *model.User, tableName string) (fields []model.Field, err error) {
@@ -98,7 +100,7 @@ func GetCatalogById(user *model.User, id int) (r model.Catalog) {
 	if err != nil {
 		log.Println(err.Error())
 	}
-
+	fieldsDb, err := GetDbTableFields(user, r.TableName)
 	//табличная часть
 	query = `select id, name, catalog_id, name_db, name_type, max_length, precision, scale, is_nullable, is_identity, is_primary_key, is_nullable_db 
 			from utills_catalog_fields where catalog_id=` + strconv.Itoa(id)
@@ -108,11 +110,23 @@ func GetCatalogById(user *model.User, id int) (r model.Catalog) {
 	for rows.Next() {
 		var f model.Field
 		err = rows.Scan(&f.Id, &f.Name, &f.CatalogId, &f.NameDb, &f.NameType, &f.MaxLength, &f.Precision, &f.Scale, &f.IsNullable, &f.IsIdentity, &f.IsPrimaryKey, &f.IsNullableDb)
+		name := f.Name
+		isNullDb := f.IsNullableDb
+		catalogId := f.CatalogId
+		entityId := f.Id
+		for _, field := range fieldsDb {
+			if field.NameDb == f.NameDb {
+				f = field
+				f.Name = name
+				f.IsNullableDb = isNullDb
+				f.CatalogId = catalogId
+				f.Id = entityId
+			}
+		}
 		r.Fields = append(r.Fields, f)
 		names = append(names, f.NameDb)
 	}
 	//если появились новые поля
-	fieldsDb, err := GetDbTableFields(user, r.TableName)
 
 	for _, field := range fieldsDb {
 		isNew := implContains(names, field.NameDb)
@@ -134,7 +148,6 @@ func GetCatalogById(user *model.User, id int) (r model.Catalog) {
 				sql.Named("is_identity", field.IsIdentity),
 				sql.Named("is_primary_key", field.IsPrimaryKey),
 				sql.Named("is_nullable_db", field.IsNullableDb),
-
 			).Scan(&newId)
 			field.Id = newId
 			r.Fields = append(r.Fields, field)
@@ -192,7 +205,6 @@ func SaveCatalogFields(user *model.User, fields []model.Field) (err error) {
 			sql.Named("is_identity", field.IsIdentity),
 			sql.Named("is_primary_key", field.IsPrimaryKey),
 			sql.Named("is_nullable_db", field.IsNullableDb),
-
 		)
 		if err != nil {
 			log.Println(err.Error())
@@ -200,6 +212,47 @@ func SaveCatalogFields(user *model.User, fields []model.Field) (err error) {
 	}
 	return err
 }
-func GetCatalogFieldsByCatalogId(user *model.User) {
 
+//редактирование справочника  - записи
+func GetEntityByCatalogId(user *model.User, catalogId, entityId int) (err error, data model.Catalog) {
+	db, _ := database.GetDb(user.ConnString)
+	defer db.Close()
+	catalog := GetCatalogById(user, catalogId)
+
+	var fields []string
+	query := `select `
+	for _, field := range catalog.Fields {
+		field.NameDb = "coalesce(cast(" + field.NameDb + " as varchar(255)), '') " + field.NameDb
+		fields = append(fields, field.NameDb)
+	}
+	query += strings.Join(fields, ",") + ` from ` + catalog.TableName + ` where id = ` + strconv.Itoa(entityId) + ` for json auto `
+	var jsonStr string
+	err = db.QueryRow(query).Scan(&jsonStr)
+	if err != nil {
+		log.Println(err.Error())
+		return err, data
+	}
+	jsonStr = strings.ReplaceAll(jsonStr, "[{", "")
+	jsonStr = strings.ReplaceAll(jsonStr, "}]", "")
+	jsonStr = strings.ReplaceAll(jsonStr, "\"", "")
+	jsonArr := strings.Split(jsonStr, ",")
+	for _, js := range jsonArr {
+		arr := strings.Split(js, ":")
+		for idx, field := range catalog.Fields {
+
+			if field.NameDb == arr[0] {
+				if field.NameType == "bit" {
+					fmt.Println("")
+				}
+				if field.NameType == "bit" && arr[1] == "1" {
+					catalog.Fields[idx].Value = "checked"
+				} else {
+					catalog.Fields[idx].Value = arr[1]
+				}
+			}
+		}
+
+	}
+	catalog.EntityId = entityId
+	return err, catalog
 }

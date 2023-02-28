@@ -31,6 +31,7 @@
             let idsNotNull = []
 
             function renderTable() {
+
                 idsNotNull = []
                 let html = ''
                 let counter = 0
@@ -39,7 +40,7 @@
                         html += '<tr>'
                         html += '<td>' + field.name
                         if (!field.is_nullable) {
-                            idsNotNull.push('val'+counter)
+                            idsNotNull.push('val' + counter)
                             html += '<span style="color: red">*</span>'
                         }
                         html += '</td>'
@@ -54,12 +55,21 @@
                             case 'int' :
                                 html += ' <input class="form-control" style="width:160px"  type="number" '
                                 break
+                            case 'bit' :
+                                html += '<div class="form-check form-switch">' +
+                                    '<input  class="form-check-input mx-auto" style="font-size: 24px" type="checkbox" '
+                                break
                             default:
                                 html += ' <input class="form-control" '
                                 break
                         }
-
-                        html += 'id="val' + counter + '">'
+                        if (field.name_type === "bit" && field.value === 'checked') {
+                            html += ' checked '
+                        } else {
+                            html += ' value= "' + field.value + '"'
+                        }
+                        html += ' id="val' + counter + '">'
+                        if (field.name_type === 'bit') html += '</div>'
                         html += '</td>'
                         html += '</tr>'
 
@@ -72,9 +82,9 @@
 
             function save() {
                 //валидация
-                for (id of idsNotNull) {
-                    let elem = document.getElementById(id)
-                    if (elem ) {
+                for (let idVal of idsNotNull) {
+                    let elem = document.getElementById(idVal)
+                    if (elem) {
                         if (!elem.value) {
                             alert('Заполните обязательные поля')
                             return
@@ -84,12 +94,20 @@
                 for (let i = 0; i < data.fields.length; i++) {
                     let el = document.getElementById('val' + i)
                     if (el && el.value) {
-                        data.fields[i].value = el.value
+                        console.log(el.type)
+                        if (data.fields[i].name_type==="bit") {
+                            data.fields[i].value = el.checked ? '1' : '0';
+                        } else {
+                            data.fields[i].value = el.value
+                        }
                     } else {
                         // data.fields[i].value = ''
                     }
 
                 }
+              
+                data.entity_id = entityId;
+
                 fetch('/api/catalog-work-save',
                     {
                         method: 'POST',
@@ -104,8 +122,9 @@
                         let txtArr = response.text.split("-")
 
                         if (txtArr[0] === "ok") {
-                            if (!id) {
-                                id = Number(txtArr[1])
+                            if (!entityId) {
+
+                                entityId = Number(txtArr[1])
                                 //   getFields(true)
 
                             } else {
@@ -127,7 +146,8 @@
                 // let fields = {{ .Fields}}
                 let
             data = {{ .}}
-
+                let
+            entityId = {{ .EntityId}}
                 renderTable()
         </script>
     </main>

@@ -2,6 +2,7 @@ package catalog_work_route
 
 import (
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -65,6 +66,32 @@ func CatalogWorkCreateHandler(w http.ResponseWriter, r *http.Request) {
 		keys := r.URL.Query()
 		id, err := strconv.Atoi(keys.Get("id"))
 		data := db_catalog.GetCatalogById(user, id)
+		files := []string{
+			"./ui/html/catalog-work/catalog-work-crate.page.tmpl",
+			"./ui/html/base.layout.tmpl",
+			"./ui/html/top.layout.tmpl",
+			"./ui/html/controls/save.tmpl",
+		}
+
+		tpl, err := template.ParseFiles(files...)
+		if err != nil {
+			log.Println(err.Error())
+		}
+
+		tpl.Execute(w, data)
+	} else {
+		data, _ := json.Marshal(route.Message{Text: "not-login"})
+		w.Write(data)
+	}
+}
+func CatalogWorkEditHandler(w http.ResponseWriter, r *http.Request) {
+	user := session.GetSessionData(r)
+	if user != nil {
+		keys := r.URL.Query()
+		catalogId, err := strconv.Atoi(keys.Get("id"))
+		entityId, err := strconv.Atoi(keys.Get("entityId"))
+		fmt.Println(entityId)
+		err, data := db_catalog.GetEntityByCatalogId(user, catalogId, entityId)
 		files := []string{
 			"./ui/html/catalog-work/catalog-work-crate.page.tmpl",
 			"./ui/html/base.layout.tmpl",

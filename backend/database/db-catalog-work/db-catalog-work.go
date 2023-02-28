@@ -1,10 +1,12 @@
 package db_catalog_work
 
 import (
+	"fmt"
 	"log"
 	"sqlutils/backend/database"
 	"sqlutils/backend/database/db_catalog"
 	"sqlutils/backend/model"
+	"strconv"
 	"strings"
 )
 
@@ -15,6 +17,7 @@ type FieldVals struct {
 	Headers     []string   `json:"headers"`
 	Fields      []string   `json:"fields"`
 	Vals        [][]string `json:"vals"`
+	ValuesId    []string   `json:"values_id"`
 }
 
 func GetCatalogWorkListById(user *model.User, id int) (err error, result FieldVals) {
@@ -28,6 +31,7 @@ func GetCatalogWorkListById(user *model.User, id int) (err error, result FieldVa
 	query := `select `
 	var fields []string
 	var fieldId string
+	var valuesId []string
 	for _, cat := range catalog.Fields {
 		if cat.IsPrimaryKey {
 			fieldId = cat.NameDb
@@ -52,10 +56,19 @@ func GetCatalogWorkListById(user *model.User, id int) (err error, result FieldVa
 			str := strings.ReplaceAll(js, "},", "")
 			arr := strings.Split(str, ",")
 			var dt []string
-			for _, a := range arr {
+			for idxa, a := range arr {
 				vl := strings.Split(a, ":")
-				//val := strings.ReplaceAll(vl[1], `"`, "")
+				nameDb := vl[0]
+
 				val := strings.ReplaceAll(vl[1], `}]`, "")
+				if catalog.Fields[idxa].NameType == "bit" {
+					if val == `"1"` {
+						val = "checked"
+					}
+				}
+				if nameDb == `"`+fieldId+`"` {
+					valuesId = append(valuesId, val)
+				}
 				dt = append(dt, val)
 				//	header[strings.ReplaceAll(vl[0], `"`, "")] = true
 
@@ -75,6 +88,7 @@ func GetCatalogWorkListById(user *model.User, id int) (err error, result FieldVa
 		Headers:     headers,
 		Fields:      fields,
 		Vals:        data,
+		ValuesId:    valuesId,
 	}
 	return err, result
 }
@@ -87,22 +101,45 @@ func SaveCatalogWork(user *model.User, catalog model.Catalog) (err error, id int
 			fieldsA = append(fieldsA, cat.NameDb)
 		}
 	}
-	query := `insert into ` + catalog.TableName + ` (` + strings.Join(fieldsA, ",") + `) values (`
+	var query string
+	if catalog.EntityId == 0 {
+		query = `insert into ` + catalog.TableName + ` (` + strings.Join(fieldsA, ",") + `) values (`
+	} else {
+		query = `update ` + catalog.TableName + ` set `
+	}
 	var vals []string
-	for _, cat := range catalog.Fields {
+	for idx, cat := range catalog.Fields {
 		if cat.Name != "" && cat.Value != "" {
 			val := cat.Value
+			if cat.NameType == "bit" {
+				fmt.Println(val)
+			}
 			if cat.NameType != "int" {
 				val = "'" + cat.Value + "'"
 			}
+			if catalog.EntityId != 0 {
+				val = catalog.Fields[idx].NameDb + "=" + val
+			}
 			vals = append(vals, val)
+
 		}
 		//if cat.NameType != ''
 	}
-	query += strings.Join(vals, ",") + ")"
-	_, err = db.Exec(query)
+	query += strings.Join(vals, ",")
+	if catalog.EntityId != 0 {
+		query += ` where id = ` + strconv.Itoa(catalog.EntityId)
+	} else {
+		query += ") ;  SELECT SCOPE_IDENTITY()"
+	}
+	if catalog.EntityId != 0 {
+		_, err = db.Exec(query)
+	} else {
+		err = db.QueryRow(query).Scan(&catalog.EntityId)
+
+	}
+
 	if err != nil {
 		log.Println(err.Error())
 	}
-	return err, 0
+	return err, catalog.EntityId
 }
