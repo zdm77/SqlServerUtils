@@ -91,7 +91,7 @@ func CatalogWorkEditHandler(w http.ResponseWriter, r *http.Request) {
 		catalogId, err := strconv.Atoi(keys.Get("id"))
 		entityId, err := strconv.Atoi(keys.Get("entityId"))
 		fmt.Println(entityId)
-		err, data := db_catalog.GetEntityByCatalogId(user, catalogId, entityId)
+		err, data := db_catalog_work.GetEntityByCatalogId(user, catalogId, entityId)
 		files := []string{
 			"./ui/html/catalog-work/catalog-work-crate.page.tmpl",
 			"./ui/html/base.layout.tmpl",

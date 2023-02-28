@@ -143,3 +143,47 @@ func SaveCatalogWork(user *model.User, catalog model.Catalog) (err error, id int
 	}
 	return err, catalog.EntityId
 }
+
+//редактирование справочника  - записи
+func GetEntityByCatalogId(user *model.User, catalogId, entityId int) (err error, data model.Catalog) {
+	db, _ := database.GetDb(user.ConnString)
+	defer db.Close()
+	catalog := db_catalog.GetCatalogById(user, catalogId)
+
+	var fields []string
+	query := `select `
+	for _, field := range catalog.Fields {
+		field.NameDb = "coalesce(cast(" + field.NameDb + " as varchar(255)), '') " + field.NameDb
+		fields = append(fields, field.NameDb)
+	}
+	query += strings.Join(fields, ",") + ` from ` + catalog.TableName + ` where id = ` + strconv.Itoa(entityId) + ` for json auto `
+	var jsonStr string
+	err = db.QueryRow(query).Scan(&jsonStr)
+	if err != nil {
+		log.Println(err.Error())
+		return err, data
+	}
+	jsonStr = strings.ReplaceAll(jsonStr, "[{", "")
+	jsonStr = strings.ReplaceAll(jsonStr, "}]", "")
+	jsonStr = strings.ReplaceAll(jsonStr, "\"", "")
+	jsonArr := strings.Split(jsonStr, ",")
+	for _, js := range jsonArr {
+		arr := strings.Split(js, ":")
+		for idx, field := range catalog.Fields {
+
+			if field.NameDb == arr[0] {
+				if field.NameType == "bit" {
+					fmt.Println("")
+				}
+				if field.NameType == "bit" && arr[1] == "1" {
+					catalog.Fields[idx].Value = "checked"
+				} else {
+					catalog.Fields[idx].Value = arr[1]
+				}
+			}
+		}
+
+	}
+	catalog.EntityId = entityId
+	return err, catalog
+}

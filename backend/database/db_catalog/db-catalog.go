@@ -2,12 +2,10 @@ package db_catalog
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"sqlutils/backend/database"
 	"sqlutils/backend/model"
 	"strconv"
-	"strings"
 )
 
 func GetDbTableFields(user *model.User, tableName string) (fields []model.Field, err error) {
@@ -114,6 +112,7 @@ func GetCatalogById(user *model.User, id int) (r model.Catalog) {
 		isNullDb := f.IsNullableDb
 		catalogId := f.CatalogId
 		entityId := f.Id
+		isNullable := f.IsNullable
 		for _, field := range fieldsDb {
 			if field.NameDb == f.NameDb {
 				f = field
@@ -121,6 +120,7 @@ func GetCatalogById(user *model.User, id int) (r model.Catalog) {
 				f.IsNullableDb = isNullDb
 				f.CatalogId = catalogId
 				f.Id = entityId
+				f.IsNullable = isNullable
 			}
 		}
 		r.Fields = append(r.Fields, f)
@@ -211,48 +211,4 @@ func SaveCatalogFields(user *model.User, fields []model.Field) (err error) {
 		}
 	}
 	return err
-}
-
-//редактирование справочника  - записи
-func GetEntityByCatalogId(user *model.User, catalogId, entityId int) (err error, data model.Catalog) {
-	db, _ := database.GetDb(user.ConnString)
-	defer db.Close()
-	catalog := GetCatalogById(user, catalogId)
-
-	var fields []string
-	query := `select `
-	for _, field := range catalog.Fields {
-		field.NameDb = "coalesce(cast(" + field.NameDb + " as varchar(255)), '') " + field.NameDb
-		fields = append(fields, field.NameDb)
-	}
-	query += strings.Join(fields, ",") + ` from ` + catalog.TableName + ` where id = ` + strconv.Itoa(entityId) + ` for json auto `
-	var jsonStr string
-	err = db.QueryRow(query).Scan(&jsonStr)
-	if err != nil {
-		log.Println(err.Error())
-		return err, data
-	}
-	jsonStr = strings.ReplaceAll(jsonStr, "[{", "")
-	jsonStr = strings.ReplaceAll(jsonStr, "}]", "")
-	jsonStr = strings.ReplaceAll(jsonStr, "\"", "")
-	jsonArr := strings.Split(jsonStr, ",")
-	for _, js := range jsonArr {
-		arr := strings.Split(js, ":")
-		for idx, field := range catalog.Fields {
-
-			if field.NameDb == arr[0] {
-				if field.NameType == "bit" {
-					fmt.Println("")
-				}
-				if field.NameType == "bit" && arr[1] == "1" {
-					catalog.Fields[idx].Value = "checked"
-				} else {
-					catalog.Fields[idx].Value = arr[1]
-				}
-			}
-		}
-
-	}
-	catalog.EntityId = entityId
-	return err, catalog
 }
