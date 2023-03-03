@@ -2,7 +2,6 @@ package catalog_work_route
 
 import (
 	"encoding/json"
-	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -60,12 +59,14 @@ func CatalogGetWorkListHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write(data)
 	}
 }
+
 func CatalogWorkCreateHandler(w http.ResponseWriter, r *http.Request) {
 	user := session.GetSessionData(r)
 	if user != nil {
 		keys := r.URL.Query()
 		id, err := strconv.Atoi(keys.Get("id"))
-		data := db_catalog.GetCatalogById(user, id)
+		data := db_catalog.GetCatalogById(user, id, true)
+
 		files := []string{
 			"./ui/html/catalog-work/catalog-work-crate.page.tmpl",
 			"./ui/html/base.layout.tmpl",
@@ -90,7 +91,7 @@ func CatalogWorkEditHandler(w http.ResponseWriter, r *http.Request) {
 		keys := r.URL.Query()
 		catalogId, err := strconv.Atoi(keys.Get("id"))
 		entityId, err := strconv.Atoi(keys.Get("entityId"))
-		fmt.Println(entityId)
+
 		err, data := db_catalog_work.GetEntityByCatalogId(user, catalogId, entityId)
 		files := []string{
 			"./ui/html/catalog-work/catalog-work-crate.page.tmpl",
@@ -129,5 +130,24 @@ func CatalogWorkSaveHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
+	}
+}
+func CatalogWorkListDeleteListHandler(w http.ResponseWriter, r *http.Request) {
+	user := session.GetSessionData(r)
+	if user != nil {
+		keys := r.URL.Query()
+		id, err := strconv.Atoi(keys.Get("id"))
+		catalogId, err := strconv.Atoi(keys.Get("catalogId"))
+		err = db_catalog_work.DeleteCatalogWorkList(user, id, catalogId)
+		var data []byte
+		if err != nil {
+			data, _ = json.Marshal(route.Message{Text: err.Error()})
+		} else {
+			data, _ = json.Marshal(route.Message{Text: "ok"})
+		}
+		w.Write(data)
+	} else {
+		data, _ := json.Marshal(route.Message{Text: "not-login"})
+		w.Write(data)
 	}
 }

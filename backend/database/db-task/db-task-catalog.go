@@ -118,3 +118,12 @@ func GetTaskCatalogParams(user *model.User, id int, isValue bool) (result []mode
 	}
 	return result
 }
+
+func DeleteTaskCatalogList(user *model.User, id int) (err error) {
+	db, _ := database.GetDb(user.ConnString)
+	defer db.Close()
+	query := `delete from utils_task_catalog where id = ` + strconv.Itoa(id)
+	_, err = db.Exec(query)
+
+	return err
+}

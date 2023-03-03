@@ -49,7 +49,8 @@
             const table = document.getElementById('json_data')
             let fields = {{ .Fields}}
             if (fields && fields.length > 0) renderTable()
-            console.log(fields)
+
+
             function valid() {
                 if (name.value === '' || tableDb.value === '') {
                     btnSave.disabled = true
@@ -72,7 +73,47 @@
                     if (elem) {
                         fields[i].is_nullable = !elem.checked
                     }
+                    elem = document.getElementById('isList' + i)
+                    // if (elem) {
+                    if (elem.checked) {
+                        fields[i].is_list = true
+                    } else {
+                        fields[i].is_list = false
+                    }
+                    elem = document.getElementById('isForm' + i)
+                    if (elem.checked) {
+                        fields[i].is_form = true
+                    } else {
+                        fields[i].is_form = false
+                    }
+                    //fields[i].is_list = !elem.checked
+
+                    // }
                 }
+            }
+            function changeNotNull(id) {
+                const fIsNotNull = document.getElementById('notNull' + id)
+                const fIsForm = document.getElementById('isForm' + id)
+                if (fIsNotNull.checked) {
+                    fIsForm.checked = true
+                    fIsForm.disabled =true
+                } else  {
+                    fIsForm.disabled = false
+                }
+
+            }
+            function changeNameField(id) {
+                const fName = document.getElementById('valName' + id)
+                const fIsList = document.getElementById('isList' + id)
+                fIsList.disabled = !fName.value
+                fIsList.checked = fName.value
+                const fIsForm = document.getElementById('isForm' + id)
+
+                // if (fIsNotNull.checked) {
+                //
+                // }
+                fIsForm.disabled = !fName.value
+                fIsForm.checked = fName.value
             }
 
             function renderTable() {
@@ -82,6 +123,8 @@
                 html += '<th>Поле</th>'
                 html += '<th>Наименование</th>'
                 html += '<th width="60px">Обязательное</th>'
+                html += '<th width="60px">В списке</th>'
+                html += '<th width="60px">В форме</th>'
                 html += '<th>Тип</th>'
                 html += '<th>Точность</th>'
                 html += '<th>Масштаб</th>'
@@ -92,15 +135,15 @@
 
 
                     html += '<tr>' +
-                        '<td>' + item.name_db + '</td>' +
-                        '<td><input  class="form-control" id=valName' + counter + ' value="' + item.name +'"'
+                        '<td>' + item.name_db + '</td>'
+                    html += '<td><input onkeyup="changeNameField(' + counter + ')"  class="form-control" id=valName' + counter + ' value="' + item.name + '"'
                     if (item.is_identity) html += ' disabled '
                     html += '></td>'
                     html += '<td style="text-align: center">'
 
                     if (item.is_nullable_db) {
                         html += '<div class="form-check form-switch">' +
-                            '<input  class="form-check-input mx-auto" style="font-size: 24px" type="checkbox"  id=notNull' + counter
+                            '<input onchange="changeNotNull('+counter+')"  class="form-check-input mx-auto" style="font-size: 24px" type="checkbox"  id=notNull' + counter
 
                         if (!item.is_nullable) html += ' checked '
                         html += '></div>'
@@ -108,9 +151,41 @@
 
                         html += '<i class="bi bi-check2" style="font-size: 25px"></i>'
                     }
+                    //В списке
+                    html += '</td>'
+                    html += '<td style="text-align: center">'
 
+                    html += '<div class="form-check form-switch">' +
+                        '<input  class="form-check-input mx-auto" style="font-size: 24px" type="checkbox"  id=isList' + counter
+
+                    if (item.is_list && item.name) {
+                        html += ' checked '
+                    }
+                    if (!item.name) {
+                        html += ' disabled '
+                    }
+                    html += '></div>'
 
                     html += '</td>'
+                    ////////
+                    //в Форме
+                    html += '</td>'
+                    html += '<td style="text-align: center">'
+
+                    html += '<div class="form-check form-switch">' +
+                        '<input  class="form-check-input mx-auto" style="font-size: 24px" type="checkbox"  id=isForm' + counter
+
+                    if ((item.is_form && item.name) || !item.is_nullable_db) {
+                        if (!item.is_identity)
+                            html += ' checked '
+                    }
+                    if (!item.name) {
+                        html += ' disabled '
+                    }
+                    html += '></div>'
+
+                    html += '</td>'
+                    //////////////
                     html += '<td>' + item.name_type + '</td>' +
                         '<td>' + item.precision + '</td>' +
                         '<td>' + item.scale + '</td>'
@@ -173,10 +248,24 @@
                             if (!id) {
                                 id = Number(txtArr[1])
                                 getFields(true)
+                                for (field of fields) {
 
+                                    if (!field.is_nullable_db && field.name === '' && !field.is_identity) {
+                                        console.log(field)
+                                        alert('Введите наименование для обязательных полей')
+                                        return
+                                    }
+                                }
                             } else {
                                 setValuesFields()
+                                for (field of fields) {
 
+                                    if (!field.is_nullable_db && field.name === '' && !field.is_identity) {
+                                        console.log(field)
+                                        alert('Введите наименование для обязательных полей')
+                                        return
+                                    }
+                                }
                                 fetch('/api/save-db-fields',
                                     {
                                         method: 'POST',

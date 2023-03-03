@@ -82,7 +82,7 @@ func CatalogEditHandler(w http.ResponseWriter, r *http.Request) {
 	if user != nil {
 		keys := r.URL.Query()
 		id, err := strconv.Atoi(keys.Get("id"))
-		data := db_catalog.GetCatalogById(user, id)
+		data := db_catalog.GetCatalogById(user, id, false)
 		files := []string{
 			"./ui/html/catalog/catalog-create.page.tmpl",
 			"./ui/html/base.layout.tmpl",
@@ -113,7 +113,7 @@ func GetDbFieldsHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 
 		}
-		list, err := db_catalog.GetDbTableFields(user, param.Name)
+		list, err := db_catalog.GetDbTableFields(user, param.Name, true)
 		data, _ := json.Marshal(list)
 		w.Write(data)
 	} else {
@@ -137,6 +137,24 @@ func SaveDbFieldsHandler(w http.ResponseWriter, r *http.Request) {
 
 		}
 		data, _ := json.Marshal("ok")
+		w.Write(data)
+	} else {
+		data, _ := json.Marshal(route.Message{Text: "not-login"})
+		w.Write(data)
+	}
+}
+func CatalogListDeleteListHandler(w http.ResponseWriter, r *http.Request) {
+	user := session.GetSessionData(r)
+	if user != nil {
+		keys := r.URL.Query()
+		id, err := strconv.Atoi(keys.Get("id"))
+		err = db_catalog.DeleteCatalogList(user, id)
+		var data []byte
+		if err != nil {
+			data, _ = json.Marshal(route.Message{Text: err.Error()})
+		} else {
+			data, _ = json.Marshal(route.Message{Text: "ok"})
+		}
 		w.Write(data)
 	} else {
 		data, _ := json.Marshal(route.Message{Text: "not-login"})

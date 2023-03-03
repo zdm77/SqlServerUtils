@@ -65,7 +65,11 @@ create table utills_catalog_fields
     is_nullable    bit          not null,
     is_identity    bit          not null,
     is_primary_key bit          not null,
-	is_nullable_db bit          not null
+	is_nullable_db bit          not null,
+	is_list bit ,
+	is_form bit,
+go
+
 )
 go
 

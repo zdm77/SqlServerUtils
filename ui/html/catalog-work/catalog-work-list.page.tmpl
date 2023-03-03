@@ -37,35 +37,58 @@
                     .then(response => response.json())
                     .then((response) => {
                         if (response.text != 'not-login') {
-
+                            console.log(response)
                             document.getElementById('cardHeader').innerText = response.name_catalog
                             id = response.catalog_id
-                            response.headers.map(function (item) {
-                                html += '<th>' + item + '</th> '
-                            })
+                            const fieldId = response.field_id
+                            let fieldIdIdx = -1
+
+                            for (let i = 0; i < response.headers.length; i++) {
+                                const val = response.headers[i]
+                                if (val === fieldId) {
+                                    fieldIdIdx = i
+                                } else  {
+                                    if (response.is_list[i])
+                                    html += '<th>' + val + '</th> '
+                                }
+                            }
 
                             let vals = response.vals
+
                             for (let i = 0; i < vals.length; i++) {
+                                let isHref = false
                                 let row = vals[i]
                                 html += '<tr>'
+                                let valId = response.values_id[i].replaceAll('"', '')
                                 for (let j = 0; j < row.length; j++) {
-                                    let val = row[j].replaceAll('"', '')
-                                    html += '<td>'
-                                    if (val === 'checked') {
-                                        html += '<i class="bi bi-check2" style="font-size: 25px"></i>'
-                                    } else {
-                                        if (j === 0) {
-                                            let valId = response.values_id[i].replaceAll('"', '')
-                                            html += '<a href="/catalog-work-edit/?id=' + id + '&entityId=' +valId+'">'
-                                            html += val + '</a> '
+                                    if (response.is_list[j]) {
+                                        if (fieldIdIdx !== j) {
+                                            let val = row[j].replaceAll('"', '')
+                                            html += '<td>'
+                                            if (val === 'unchecked') {
+                                                val = ''
+                                            }
+                                            if (val === 'checked') {
+                                                html += '<i class="bi bi-check2" style="font-size: 25px"></i>'
+                                            } else {
+                                                if (!isHref) {
 
-                                        } else {
-                                            html += val
+                                                    html += '<a href="/catalog-work-edit/?id=' + id + '&entityId=' + valId + '">'
+                                                    html += val + '</a> '
+                                                    isHref = true
+
+                                                } else {
+                                                    html += val
+                                                }
+
+                                            }
+
+                                            html += '</td>'
                                         }
                                     }
-
-                                    html += '</td>'
                                 }
+                                html += '<td width="32px"><i class="bi-trash text-danger" style="cursor: pointer"' +
+                                    ' onclick="deleteTask(' + valId + ',' + id + ')"></i></td>'
                                 html += '</tr>'
                             }
                         }
@@ -76,8 +99,26 @@
             }
 
 
-            function deleteTask(id) {
-                alert(id)
+            function deleteTask(id, catalogId) {
+                const isDel = confirm('Вы действительно хотите удалить запись? ')
+                if (isDel) {
+                    fetch('/api/catalog-work-list/delete/?id=' + id + '&catalogId=' + catalogId)
+                        .then(response => response.json())
+                        .then((response) => {
+
+                            if (response.text !== 'not-login') {
+                                if (response.text === 'ok') {
+                                    renderTable()
+                                    alert('Данные удалены')
+
+                                } else {
+                                    alert(response.text)
+                                }
+                            } else {
+                                document.location = '/'
+                            }
+                        })
+                }
             }
 
             let id = {{ .}}

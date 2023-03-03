@@ -37,6 +37,7 @@ func main() {
 
 	//****Каталог Задачи api
 	mux.HandleFunc("/api/task-list", task_route.GetTaskCatalogListHandler)
+	mux.HandleFunc("/api/task-list/delete/", task_route.TaskCatalogDeleteListHandler)
 	mux.HandleFunc("/api/task-params", task_route.GetTaskParamsHandler)
 	mux.HandleFunc("/api/task-save", task_route.TaskCatalogSaveHandler)
 	mux.HandleFunc("/api/task-save-params", task_route.TaskSaveParamsHandler)
@@ -47,6 +48,7 @@ func main() {
 	mux.HandleFunc("/catalog-edit/", catalog_route.CatalogEditHandler)
 
 	//*******Справочники api
+	mux.HandleFunc("/api/catalog-list/delete/", catalog_route.CatalogListDeleteListHandler)
 	mux.HandleFunc("/api/catalog-list", catalog_route.GetCatalogListHandler)
 	mux.HandleFunc("/api/catalog-save", catalog_route.CatalogSaveHandler)
 	mux.HandleFunc("/api/get-db-fields", catalog_route.GetDbFieldsHandler)
@@ -55,6 +57,7 @@ func main() {
 	mux.HandleFunc("/task1", task_route.Task1Handler)
 
 	//Заполнение справочников
+	mux.HandleFunc("/api/catalog-work-list/delete/", catalog_work_route.CatalogWorkListDeleteListHandler)
 	mux.HandleFunc("/catalog-work-list/", catalog_work_route.CatalogWorkListHandler)
 	mux.HandleFunc("/catalog-work-create/", catalog_work_route.CatalogWorkCreateHandler)
 	mux.HandleFunc("/catalog-work-edit/", catalog_work_route.CatalogWorkEditHandler)

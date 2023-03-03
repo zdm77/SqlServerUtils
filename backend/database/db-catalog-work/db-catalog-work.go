@@ -18,6 +18,7 @@ type FieldVals struct {
 	Fields      []string   `json:"fields"`
 	Vals        [][]string `json:"vals"`
 	ValuesId    []string   `json:"values_id"`
+	IsList      []bool     `json:"is_list"`
 }
 
 func GetCatalogWorkListById(user *model.User, id int) (err error, result FieldVals) {
@@ -25,25 +26,29 @@ func GetCatalogWorkListById(user *model.User, id int) (err error, result FieldVa
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
 
-	catalog := db_catalog.GetCatalogById(user, id)
+	catalog := db_catalog.GetCatalogById(user, id, false)
 	var data [][]string
 	var headers []string
+	var isList []bool
 	query := `select `
 	var fields []string
 	var fieldId string
 	var valuesId []string
+	//var catalogRes model.Catalog
 	for _, cat := range catalog.Fields {
 		if cat.IsPrimaryKey {
 			fieldId = cat.NameDb
 		}
-		if cat.IsIdentity || cat.Name != "" {
+		if cat.IsIdentity || cat.Name != "" || !cat.IsNullable || !cat.IsNullableDb {
 			field := "coalesce(cast(" + cat.NameDb + " as varchar(255)), '') " + cat.NameDb
 			fields = append(fields, field)
+			isList = append(isList, cat.IsList)
 			if !cat.IsIdentity {
 				headers = append(headers, cat.Name)
 			} else {
 				headers = append(headers, cat.NameDb)
 			}
+
 		}
 	}
 	query += strings.Join(fields, ",") + " from " + catalog.TableName + "  for json auto "
@@ -56,16 +61,27 @@ func GetCatalogWorkListById(user *model.User, id int) (err error, result FieldVa
 			str := strings.ReplaceAll(js, "},", "")
 			arr := strings.Split(str, ",")
 			var dt []string
-			for idxa, a := range arr {
+			for _, a := range arr {
 				vl := strings.Split(a, ":")
 				nameDb := vl[0]
 
 				val := strings.ReplaceAll(vl[1], `}]`, "")
-				if catalog.Fields[idxa].NameType == "bit" {
-					if val == `"1"` {
-						val = "checked"
+				for _, f := range catalog.Fields {
+					if f.NameDb == strings.ReplaceAll(nameDb, "\"", "") && f.NameType == "bit" {
+						if val == `"1"` {
+							val = "checked"
+						} else {
+							val = "unchecked"
+						}
 					}
 				}
+				//if catalog.Fields[idxa].NameType == "bit" {
+				//	if val == `"1"` {
+				//		val = "checked"
+				//	} else {
+				//		val = "unchecked"
+				//	}
+				//}
 				if nameDb == `"`+fieldId+`"` {
 					valuesId = append(valuesId, val)
 				}
@@ -89,6 +105,7 @@ func GetCatalogWorkListById(user *model.User, id int) (err error, result FieldVa
 		Fields:      fields,
 		Vals:        data,
 		ValuesId:    valuesId,
+		IsList:      isList,
 	}
 	return err, result
 }
@@ -148,7 +165,7 @@ func SaveCatalogWork(user *model.User, catalog model.Catalog) (err error, id int
 func GetEntityByCatalogId(user *model.User, catalogId, entityId int) (err error, data model.Catalog) {
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
-	catalog := db_catalog.GetCatalogById(user, catalogId)
+	catalog := db_catalog.GetCatalogById(user, catalogId, true)
 
 	var fields []string
 	query := `select `
@@ -186,4 +203,15 @@ func GetEntityByCatalogId(user *model.User, catalogId, entityId int) (err error,
 	}
 	catalog.EntityId = entityId
 	return err, catalog
+}
+func DeleteCatalogWorkList(user *model.User, id, catalogId int) (err error) {
+
+	catalog := db_catalog.GetCatalogById(user, catalogId, false)
+	db, _ := database.GetDb(user.ConnString)
+	defer db.Close()
+	query := `delete from  ` + catalog.TableName + ` where id = ` + strconv.Itoa(id)
+
+	_, err = db.Exec(query)
+
+	return err
 }

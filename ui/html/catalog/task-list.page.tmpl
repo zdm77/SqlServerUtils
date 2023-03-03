@@ -15,38 +15,58 @@
                 document.location = '/task-catalog-create'
             }
 
-            fetch('/api/task-list',
-                {
-                    method: 'PUT',
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({"id": 5})
-                })
-                .then(response => response.json())
-                .then((response) => {
-                    if (response.text != 'not-login') {
-                        let table = document.getElementById("json_data");
-                        let htmlData = '<tr><th>Наименование</th><th>Таблица БД</th></tr>';
-                        response.map(function (item) {
-                            htmlData += '<tr>' +
-                                '<td><a href="/task-catalog-edit/?id=$id">' + item.name + '</a> </td>' +
-                                '<td>' + item.table_db + '</td>' +
-                                '<td width="32px"><i class="bi-trash text-danger" style="cursor: pointer"' +
-                                ' onclick="deleteTask(' + item.id + ')"></i></td>' +
-                                '</tr> ';
+            renderData()
+
+            function renderData() {
+                fetch('/api/task-list',
+                    {
+                        method: 'PUT',
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                    })
+                    .then(response => response.json())
+                    .then((response) => {
+                        if (response.text != 'not-login') {
+                            let table = document.getElementById("json_data");
+                            let htmlData = '<tr><th>Наименование</th><th>Таблица БД</th></tr>';
+                            response.map(function (item) {
+                                htmlData += '<tr>' +
+                                    '<td><a href="/task-catalog-edit/?id=$id">' + item.name + '</a> </td>' +
+                                    '<td>' + item.table_db + '</td>' +
+                                    '<td width="32px"><i class="bi-trash text-danger" style="cursor: pointer"' +
+                                    ' onclick="deleteTask(' + item.id + ')"></i></td>' +
+                                    '</tr> ';
 
 
-                            htmlData = htmlData.replaceAll("$id", item.id)
-                        })
-                        table.innerHTML = htmlData;
-                    } else {
-                        document.location = '/'
-                    }
-                });
+                                htmlData = htmlData.replaceAll("$id", item.id)
+                            })
+                            table.innerHTML = htmlData;
+                        } else {
+                            document.location = '/'
+                        }
+                    });
+            }
 
             function deleteTask(id) {
-                alert(id)
+                const isDel = confirm('Вы действительно хотите удалить запись? ')
+                if (isDel) {
+                    fetch('/api/task-list/delete/?id=' + id)
+                        .then(response => response.json())
+                        .then((response) => {
+                            if (response.text !== 'not-login') {
+                                if (response.text === 'ok') {
+                                    renderData()
+                                    alert('Данные удалены')
+
+                                } else {
+                                    alert(response.text)
+                                }
+                            } else {
+                                document.location = '/'
+                            }
+                        })
+                }
             }
         </script>
     </main>

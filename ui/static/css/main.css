@@ -36,3 +36,6 @@ table.dataTable thead .sorting_desc_disabled:before {
     -ms-overflow-style: -ms-autohiding-scrollbar;
     border: 1px solid #000000;
 }
+.table-hover thead tr:hover th, .table-hover tbody tr:hover td {
+    background-color: #D1D119;
+}

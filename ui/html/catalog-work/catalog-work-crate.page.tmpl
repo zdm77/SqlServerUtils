@@ -85,18 +85,22 @@
                 for (let idVal of idsNotNull) {
                     let elem = document.getElementById(idVal)
                     if (elem) {
+
                         if (!elem.value) {
-                            alert('Заполните обязательные поля')
-                            return
+                            if (elem.type!=='checkbox') {
+                                alert('Заполните обязательные поля')
+                                return
+                            }
                         }
                     }
                 }
                 for (let i = 0; i < data.fields.length; i++) {
                     let el = document.getElementById('val' + i)
-                    if (el && el.value) {
-                        console.log(el.type)
+                    if (el ) {
+
                         if (data.fields[i].name_type==="bit") {
                             data.fields[i].value = el.checked ? '1' : '0';
+
                         } else {
                             data.fields[i].value = el.value
                         }
@@ -105,7 +109,7 @@
                     }
 
                 }
-              
+
                 data.entity_id = entityId;
 
                 fetch('/api/catalog-work-save',

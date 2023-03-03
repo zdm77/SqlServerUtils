@@ -218,3 +218,21 @@ func TaskCatalogEditHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write(data)
 	}
 }
+func TaskCatalogDeleteListHandler(w http.ResponseWriter, r *http.Request) {
+	user := session.GetSessionData(r)
+	if user != nil {
+		keys := r.URL.Query()
+		id, err := strconv.Atoi(keys.Get("id"))
+		err = db_task.DeleteTaskCatalogList(user, id)
+		var data []byte
+		if err != nil {
+			data, _ = json.Marshal(route.Message{Text: err.Error()})
+		} else {
+			data, _ = json.Marshal(route.Message{Text: "ok"})
+		}
+		w.Write(data)
+	} else {
+		data, _ := json.Marshal(route.Message{Text: "not-login"})
+		w.Write(data)
+	}
+}

@@ -4,46 +4,82 @@
     <main class="form-main">
         <div class="card">
             <div class="card-header">
-                Задачи для загрузки
+                Шаблоны справочников
             </div>
-            {{template "list-panel"}}
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item">
+                    {{template "create"}}
+                </li>
+                <li class="list-group-item">
+                    <table id="qqq"  class="table table-striped table-bordered table-sm table-responsive" style="width:100%"></table>
+                </li>
+            </ul>
         </div>
+
+
+
         <script>
 
             function create(){
                 document.location='/catalog-create'
             }
-            fetch('/api/catalog-list',
-                {
-                    method: 'POST',
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
+            renderData()
+            function renderData() {
+                fetch('/api/catalog-list',
+                    {
+                        method: 'POST',
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
 
-                })
-                .then(response => response.json())
-                .then((response) => {
-                    if (response.text != 'not-login') {
-                        let table = document.getElementById("json_data");
-                        let htmlData = '<tr><th>Наименование</th><th>Таблица БД</th></tr>';
-                        response.map(function (item) {
-                            htmlData += '<tr>' +
-                                '<td><a href="/catalog-edit/?id=$id">' + item.name + '</a> </td>' +
-                                '<td>' + item.table_name + '</td>' +
-                                '<td  width="32px"><i class="bi-trash text-danger" style="cursor: pointer" onclick="deleteTask('+item.id+')"></i></td>' +
-                                '</tr> ';
+                    })
+                    .then(response => response.json())
+                    .then((response) => {
+                        if (response.text != 'not-login') {
+                            let table = document.getElementById("qqq");
+                            let htmlData = '<thead><tr><th>Наименование</th><th>Таблица БД</th><th></th></tr></thead>';
+                            htmlData += '<tbody>'
+                            response.map(function (item) {
+                                htmlData += '<tr>' +
+                                    '<td><a href="/catalog-edit/?id=$id">' + item.name + '</a> </td>' +
+                                    '<td>' + item.table_name + '</td>' +
+                                    '<td  width="32px"><i class="bi-trash text-danger" style="cursor: pointer" onclick="deleteTask(' + item.id + ')"></i></td>' +
+                                    '</tr> ';
 
-                            htmlData = htmlData.replaceAll("$id", item.id)
-                        })
-                        table.innerHTML = htmlData;
-                    } else {
-                        document.location = '/'
-                    }
-                });
+                                htmlData = htmlData.replaceAll("$id", item.id)
+                            })
+                            htmlData+='</tbody>'
 
-            function deleteTask(id) {
-                alert(id)
+                            table.innerHTML = htmlData;
+                          //   $('#qqq').DataTable();
+                        } else {
+                            document.location = '/'
+                        }
+                    });
             }
+            function deleteTask(id) {
+                const isDel = confirm('Вы действительно хотите удалить запись? ')
+                if (isDel) {
+                    fetch('/api/catalog-list/delete/?id=' + id)
+                        .then(response => response.json())
+                        .then((response) => {
+                            if (response.text !== 'not-login') {
+                                if (response.text === 'ok') {
+                                    renderData()
+                                    alert('Данные удалены')
+
+                                } else {
+                                    alert(response.text)
+                                }
+                            } else {
+                                document.location = '/'
+                            }
+                        })
+                }
+            }
+           // $(document).ready(function () {
+
+            //});
         </script>
     </main>
 {{end}}
