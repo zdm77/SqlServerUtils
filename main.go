@@ -2,14 +2,20 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
+	"fmt"
 	_ "github.com/denisenkom/go-mssqldb"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
+	"sqlutils/backend/database"
 	"sqlutils/backend/route"
 	catalog_route "sqlutils/backend/route/catalog-route"
 	catalog_work_route "sqlutils/backend/route/catalog-work-route"
 	"sqlutils/backend/route/task-route"
+	"sqlutils/backend/session"
+	"strconv"
 	"strings"
 )
 
@@ -29,6 +35,9 @@ func main() {
 	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
 	mux.HandleFunc("/", route.Login)
 	mux.HandleFunc("/main", route.DoLogin)
+
+	mux.HandleFunc("/test", Test)
+	mux.HandleFunc("/api/test/", GetTestDataForLocal)
 	//*********Каталог****************////////////////
 	//*********Задачи***//
 	mux.HandleFunc("/task-list-catalog", task_route.TaskListCatalogHandler)
@@ -92,4 +101,52 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
+}
+func Test(w http.ResponseWriter, r *http.Request) {
+	files := []string{
+		"./ui/html/test.page.tmpl",
+		"./ui/html/base.layout.tmpl",
+		"./ui/html/top.layout.tmpl",
+		"./ui/html/controls/create.tmpl",
+		"./ui/html/controls/table.tmpl",
+		"./ui/html/controls/list-panel.tmpl",
+	}
+
+	tpl, err := template.ParseFiles(files...)
+	if err != nil {
+		log.Println(err.Error())
+	}
+
+	tpl.Execute(w, nil)
+}
+func GetTestData(w http.ResponseWriter, r *http.Request) {
+	keys := r.URL.Query()
+
+	user := session.GetSessionData(r)
+	type JsonT struct {
+		Start int `json:"start"`
+	}
+
+	st := keys["start"][0]
+	order := keys["order[0][dir]"]
+	orderCol := keys["order[0][column]"]
+	fmt.Println(orderCol, order)
+	start, _ := strconv.Atoi(st)
+	//	decoder := json.NewDecoder(r.Body)
+	param := JsonT{
+		Start: start,
+	}
+
+	//decoder.Decode(&param)
+	//log.Println(param)
+	list := database.Test(user, param.Start)
+	data, _ := json.Marshal(list)
+	w.Write(data)
+}
+func GetTestDataForLocal(w http.ResponseWriter, r *http.Request) {
+	user := session.GetSessionData(r)
+
+	list := database.Test(user, 0)
+	data, _ := json.Marshal(list)
+	w.Write(data)
 }
