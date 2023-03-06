@@ -21,12 +21,6 @@ import (
 
 func main() {
 
-	//var server = ""
-	//var port = "1433"
-	//var user = "sa"
-	//var password = "masterkey"
-	//var dbName = "utils"
-
 	var err error
 	os.RemoveAll("tmp")
 	mux := http.NewServeMux()
@@ -101,6 +95,10 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
+}
+func Home(w http.ResponseWriter, r *http.Request) {
+
+	fmt.Fprintf(w, "Первая страничка!")
 }
 func Test(w http.ResponseWriter, r *http.Request) {
 	files := []string{
