@@ -21,8 +21,12 @@
                                 <input class="form-control" id="table_db" value={{ .TableDb}}>
                             </div>
                             <div class="col-sm">
-                                <label for="str_header" class="form-label">Строка заголовка (число)</label>
-                                <input class="form-control" id="str_header" value={{ .StrHeader}}>
+                                <label for="str_header" class="form-label">Строка заголовка</label>
+                                <input type="number" class="form-control" id="str_header" value={{ .StrHeader}}>
+                            </div>
+                            <div class="col-sm">
+                                <label for="sheet_number" class="form-label">Страница</label>
+                                <input type="number" class="form-control" id="sheet_number" value={{ .SheetNumber}}>
                             </div>
                         </div>
                     </li>
@@ -49,16 +53,16 @@
                            class="table table-striped table-bordered table-sm table-responsive"></table>
                 </li>
             </ul>
-
-
-{{/*            <div class="col-6">*/}}
-{{/*                {{template "save"}}*/}}
-{{/*            </div>*/}}
-{{/*            <table id="json_data"*/}}
-{{/*                   class="table table-striped table-bordered table-sm table-responsive"></table>*/}}
+            {{/*            <div class="col-6">*/}}
+            {{/*                {{template "save"}}*/}}
+            {{/*            </div>*/}}
+            {{/*            <table id="json_data"*/}}
+            {{/*                   class="table table-striped table-bordered table-sm table-responsive"></table>*/}}
         </div>
         <script>
             const strHeader = document.getElementById('str_header')
+            const sheetNumber = document.getElementById('sheet_number')
+            if (sheetNumber.value === "") sheetNumber.value = 1
             strHeader.addEventListener('keyup', function () {
                 valid()
 
@@ -106,10 +110,12 @@
                 const form = document.querySelector('form')
                 const data = new FormData(form);
                 const strHeaderVal = document.getElementById('str_header').value
+                const sheetNumberVal = document.getElementById('sheet_number').value
                 let files = document.getElementById('file_upload').files
                 data.append('file', files[0]);
                 //   data.append('task_id', {{ .Id}});
                 data.append('str_header', strHeaderVal);
+                data.append('sheet_number', sheetNumberVal);
                 data.append('only_headers', 'true');
                 let table = document.getElementById("json_data");
                 fetch('/api/upload',
@@ -119,6 +125,11 @@
                     })
                     .then(response => response.json())
                     .then((response) => {
+
+                        if (response.text && response.text !== "") {
+                            alert(response.text)
+                            return
+                        }
                         let htmlData = ''
                         response.map(function (item) {
 
@@ -212,6 +223,7 @@
                 let name = document.getElementById("name").value
                 let table_db = document.getElementById("table_db").value
                 let str_header = document.getElementById("str_header").value
+                let sheet_number = document.getElementById("sheet_number").value
                 fetch('/api/task-save',
                     {
                         method: 'PUT',
@@ -222,7 +234,8 @@
                             id: id,
                             name: name,
                             table_db: table_db,
-                            str_header: Number(str_header)
+                            str_header: Number(str_header),
+                            sheet_number: Number(sheet_number),
                         })
                     })
                     .then(response => response.json())

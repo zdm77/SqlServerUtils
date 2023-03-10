@@ -46,14 +46,14 @@ func ExecTaskFromExcel(user *model.User, result model.Result) (err error) {
 	tx.Commit()
 	return err
 }
-func GetHeaders(fileExe string, strHeader int) (params []model.TaskParams) {
+func GetHeaders(fileExe string, strHeader int, sheetNumber int) (params []model.TaskParams) {
 
 	wb, err := xlsx.OpenFile(fileExe)
 	if err != nil {
 		log.Println(err.Error())
 	}
 
-	sh := wb.Sheets[0]
+	sh := wb.Sheets[sheetNumber-1]
 	//заголовки
 	for i := 0; i < sh.MaxCol; i++ {
 		v, _ := sh.Cell(strHeader-1, i)
@@ -75,7 +75,7 @@ func GetData(user *model.User, fileExe string, taskId int) (data model.Result) {
 		log.Println(err.Error())
 	}
 
-	sh := wb.Sheets[0]
+	sh := wb.Sheets[task.SheetNumber-1]
 	var headers []model.TaskParams
 	params := db_task.GetTaskCatalogParams(user, taskId, true)
 	//заголовки

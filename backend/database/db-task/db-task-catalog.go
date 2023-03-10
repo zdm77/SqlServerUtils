@@ -11,7 +11,7 @@ import (
 func GetTaskCatalogList(user *model.User) (result []model.Task) {
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
-	query := `select  id, name, table_db,  str_header from utils_task_catalog order by id`
+	query := `select  id, name, table_db,  str_header, sheet_number from utils_task_catalog order by id`
 	rows, err := db.Query(query)
 	defer rows.Close()
 	if err != nil {
@@ -19,7 +19,7 @@ func GetTaskCatalogList(user *model.User) (result []model.Task) {
 	}
 	for rows.Next() {
 		var r model.Task
-		err = rows.Scan(&r.Id, &r.Name, &r.TableDb, &r.StrHeader)
+		err = rows.Scan(&r.Id, &r.Name, &r.TableDb, &r.StrHeader, &r.SheetNumber)
 		if err != nil {
 
 		}
@@ -31,11 +31,11 @@ func GetTaskCatalogList(user *model.User) (result []model.Task) {
 func GetTaskCatalogById(user *model.User, id int) (r model.Task) {
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
-	query := `select  id, name, table_db, coalesce(str_header, 1) from utils_task_catalog where id = @Id`
+	query := `select  id, name, table_db, coalesce(str_header, 1) , coalesce(sheet_number, 1)  from utils_task_catalog where id = @Id`
 
 	stmt, err := db.Prepare(query)
 	row := stmt.QueryRow(sql.Named("Id", id))
-	err = row.Scan(&r.Id, &r.Name, &r.TableDb, &r.StrHeader)
+	err = row.Scan(&r.Id, &r.Name, &r.TableDb, &r.StrHeader, &r.SheetNumber)
 	if err != nil {
 		log.Println(err.Error())
 	}
@@ -49,16 +49,17 @@ func SaveTaskCatalog(user *model.User, task model.Task) (err error, id int) {
 	var stmt *sql.Stmt
 
 	if task.Id == 0 {
-		query = `insert into utils_task_catalog (name, table_db, str_header)
-					values (@Name, @TableDb, @StrHeader);  SELECT SCOPE_IDENTITY()`
+		query = `insert into utils_task_catalog (name, table_db, str_header, sheet_number)
+					values (@Name, @TableDb, @StrHeader, @SheetNumber );  SELECT SCOPE_IDENTITY()`
 	} else {
-		query = `update  utils_task_catalog set name = @Name, table_db = @TableDb, str_header = @StrHeader where id = @Id`
+		query = `update  utils_task_catalog set name = @Name, table_db = @TableDb, str_header = @StrHeader,  sheet_number = @SheetNumber where id = @Id`
 	}
 	stmt, _ = db.Prepare(query)
 	err = stmt.QueryRow(sql.Named("Name", task.Name),
 		sql.Named("TableDb", task.TableDb),
 		sql.Named("Id", task.Id),
 		sql.Named("StrHeader", task.StrHeader),
+		sql.Named("SheetNumber", task.SheetNumber),
 	).Scan(&id)
 
 	if err != nil && err.Error() != "sql: no rows in result set" {

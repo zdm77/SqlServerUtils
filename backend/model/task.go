@@ -1,11 +1,12 @@
 package model
 
 type Task struct {
-	Id         int    `json:"id"`
-	Name       string `json:"name"`
-	TableDb    string `json:"table_db"`
-	StrHeader  int    `json:"str_header"`
-	FileUpload string `json:"file_upload"`
+	Id          int    `json:"id"`
+	Name        string `json:"name"`
+	TableDb     string `json:"table_db"`
+	StrHeader   int    `json:"str_header"`
+	SheetNumber int    `json:"sheet_number"`
+	FileUpload  string `json:"file_upload"`
 }
 type TaskParams struct {
 	Id         int    `json:"id"`

@@ -2,6 +2,7 @@ package task_route
 
 import (
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -103,12 +104,21 @@ func GetTaskParamsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func TaskUploadHandler(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if e := recover(); e != nil {
+			fmt.Println(e)
+			data, _ := json.Marshal(route.Message{Text: "Ошибка. Проверьте корректность данных"})
+			w.Write(data)
+		}
+	}()
+
 	user := session.GetSessionData(r)
 	tmpDir := path.Join("tmp", time.Now().Local().Format("02012006-150405"))
 	os.MkdirAll("tmp", 0777)
 	os.MkdirAll(tmpDir, 0777)
 	var taskId int
 	var strHeader int
+	var sheetNumber int
 	onlyHeader := true
 	//fmt.Println(taskId)
 	var fileExec string
@@ -153,6 +163,11 @@ func TaskUploadHandler(w http.ResponseWriter, r *http.Request) {
 							val, _ := strconv.Atoi(string(val))
 							strHeader = val
 						}
+					case "sheet_number":
+						{
+							val, _ := strconv.Atoi(string(val))
+							sheetNumber = val
+						}
 					}
 				}
 			}
@@ -161,7 +176,7 @@ func TaskUploadHandler(w http.ResponseWriter, r *http.Request) {
 		//task.ExecTaskFromExcel(user, fileExec, taskId)
 	}
 	if onlyHeader {
-		params := task.GetHeaders(fileExec, strHeader)
+		params := task.GetHeaders(fileExec, strHeader, sheetNumber)
 		data, _ := json.Marshal(params)
 		w.Write(data)
 	} else {
