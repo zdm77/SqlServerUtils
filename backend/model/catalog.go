@@ -24,4 +24,8 @@ type Field struct {
 	Value        string `json:"value"`
 	IsList       bool   `json:"is_list"`
 	IsForm       bool   `json:"is_form"`
+	LinkTableId  int    `json:"link_table_id"`
+}
+type LinkTable struct {
+	Id int `json:"id"`
 }

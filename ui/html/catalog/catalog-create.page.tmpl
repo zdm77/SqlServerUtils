@@ -35,6 +35,14 @@
                 </li>
             </ul>
         </div>
+        <style>
+            th {
+                text-align: center;
+                vertical-align: middle;
+                background-color: #D3D3D3!important;
+                /*color: white!important;*/
+            }
+        </style>
         <script>
             const name = document.getElementById('name')
             name.addEventListener('keyup', function () {
@@ -86,22 +94,29 @@
                     } else {
                         fields[i].is_form = false
                     }
+                    elem = document.getElementById('linkId' + i)
+                    if (elem) {
+                        fields[i].link_table_id = Number(elem.value)
+
+                    }
                     //fields[i].is_list = !elem.checked
 
                     // }
                 }
             }
+
             function changeNotNull(id) {
                 const fIsNotNull = document.getElementById('notNull' + id)
                 const fIsForm = document.getElementById('isForm' + id)
                 if (fIsNotNull.checked) {
                     fIsForm.checked = true
-                    fIsForm.disabled =true
-                } else  {
+                    fIsForm.disabled = true
+                } else {
                     fIsForm.disabled = false
                 }
 
             }
+
             function changeNameField(id) {
                 const fName = document.getElementById('valName' + id)
                 const fIsList = document.getElementById('isList' + id)
@@ -116,21 +131,100 @@
                 fIsForm.checked = fName.value
             }
 
+            function changeCreateModify(elem) {
+                let arr = elem.id.split('-')
+                let idDisable = ''
+                let idDisableOnlyStr = ''
+                switch (arr[0]) {
+                    case 'isDateCreate' : {
+                        idDisable = 'isDateMod-'
+
+                        break
+                    }
+                    case 'isDateMod' : {
+                        idDisable = 'isDateCreate-'
+
+                        break
+                    }
+                    case 'isUserCreate' : {
+                        idDisable = 'isUserMod-'
+
+                        break
+                    }
+                    case 'isUserMod' : {
+                        idDisable = 'isUserCreate-'
+
+                        break
+                    }
+
+                }
+                idDisableOnlyStr = idDisable
+                idDisable += arr[1]
+
+                let elemDis = document.getElementById(idDisable)
+                if (elem.checked) {
+
+                    elemDis.checked = false
+                    elemDis.disabled = true
+                    for (let i = 0; i < fields.length; i++) {
+                        if (i != arr[1]) {
+                            let elemIn = document.getElementById(arr[0] + '-' + i)
+                            if (elemIn) {
+                                elemIn.checked = false
+                                let elemDis2 = document.getElementById(idDisableOnlyStr + i)
+
+                                if (elemDis2)
+                                    elemDis2.disabled = false
+                            }
+
+                        }
+                    }
+
+                } else {
+
+                    elemDis.disabled = false
+                }
+
+            }
+
             function renderTable() {
 
                 let html = ''
                 let counter = 0
-                html += '<th>Поле</th>'
-                html += '<th>Наименование</th>'
-                html += '<th width="60px">Обязательное</th>'
-                html += '<th width="60px">В списке</th>'
-                html += '<th width="60px">В форме</th>'
-                html += '<th>Тип</th>'
-                html += '<th>Точность</th>'
-                html += '<th>Масштаб</th>'
-                html += '<th>Счетчик</th>'
+                html +='<tr>'
 
+                html += '<th rowspan="2" >Поле</th>'
+                html += '<th rowspan="2" >Наименование</th>'
+                html += '<th width="60px" rowspan="2" >Обяза-<br/>тельное</th>'
+                html += '<th width="60px" colspan="2" >Отображение</th>'
+                // html += '<th width="60px" rowspan="2" >В форме</th>'
+                html += '<th rowspan="2" >Список</th>'
+                html += '<th rowspan="2" >Тип</th>'
 
+                html += '<th colspan="2" >Пользователь</th>'
+                html += '<th colspan="2">Дата</th>'
+                // html += '<th>Точность</th>'
+                // html += '<th>Масштаб</th>'
+                html += '<th rowspan="2" >Счетчик</th>'
+                html +='</tr>'
+//////////////////
+
+                html += '<tr>'
+                // html += '<th></th>'
+                // html += '<th></th>'
+                // html += '<th></th>'
+                // html += '<th></th>'
+                // html += '<th></th>'
+                // html += '<th></th>'
+                // html += '<th></th>'
+                html += '<th>В списке</th>'
+                html += '<th>В форме</th>'
+                html += '<th>Создал</th>'
+                html += '<th>Изменил</th>'
+                html += '<th>Создания</th>'
+                html += '<th>Изменения</th>'
+                // html += '<th></th>'
+                html += '</tr>'
                 fields.map(function (item) {
 
 
@@ -143,7 +237,7 @@
 
                     if (item.is_nullable_db) {
                         html += '<div class="form-check form-switch">' +
-                            '<input onchange="changeNotNull('+counter+')"  class="form-check-input mx-auto" style="font-size: 24px" type="checkbox"  id=notNull' + counter
+                            '<input onchange="changeNotNull(' + counter + ')"  class="form-check-input mx-auto" style="font-size: 24px" type="checkbox"  id=notNull' + counter
 
                         if (!item.is_nullable) html += ' checked '
                         html += '></div>'
@@ -186,9 +280,49 @@
 
                     html += '</td>'
                     //////////////
-                    html += '<td>' + item.name_type + '</td>' +
-                        '<td>' + item.precision + '</td>' +
-                        '<td>' + item.scale + '</td>'
+                    //Выпадающий список
+                    html += '<td>'
+                    html += ' <select id="linkId' + counter + '" name="task" class="form-select"></select> '
+
+                    html += '</td>'
+                    html += '<td>' + item.name_type + '</td>'
+                    // +
+                    // '<td>' + item.precision + '</td>' +
+                    // '<td>' + item.scale + '</td>'
+                    /////////Пользователь
+                    //Создал
+                    html += '<td>'
+                    if (item.name_type == 'varchar') {
+                        html += '<div class="form-check form-switch">' +
+                            '<input onchange="changeCreateModify(this)"  class="form-check-input mx-auto" style="font-size: 24px" type="checkbox"  id=isUserCreate-' + counter
+                    }
+                    html += ' </td>'
+                    //Изменил
+                    html += ' <td>'
+                    if (item.name_type == 'varchar') {
+                        html += '<div class="form-check form-switch">' +
+                            '<input onchange="changeCreateModify(this)"  class="form-check-input mx-auto" style="font-size: 24px" type="checkbox"  id=isUserMod-' + counter
+                    }
+                    html += ' </td>'
+                    ///////
+
+                    /////////Дата
+                    //Создания
+                    html += '<td>'
+
+                    if (item.name_type == 'date') {
+                        html += '<div class="form-check form-switch">' +
+                            '<input onchange="changeCreateModify(this)" class="form-check-input mx-auto" style="font-size: 24px" type="checkbox"  id=isDateCreate-' + counter
+                    }
+                    html += ' </td>'
+                    //Изменения
+                    html += '<td>'
+                    if (item.name_type == 'date') {
+                        html += '<div class="form-check form-switch">' +
+                            '<input  onchange="changeCreateModify(this)" class="form-check-input mx-auto" style="font-size: 24px" type="checkbox"  id=isDateMod-' + counter
+                    }
+                    html += ' </td>'
+                    ///////
 
                     html += item.is_identity ? '<td  style="text-align: center"><i class="bi bi-check2"></i> </td>' : '<td></td>';
 
@@ -199,6 +333,54 @@
                 })
 
                 table.innerHTML = html
+            }
+
+            getListForDropdown()
+
+            function getListForDropdown() {
+                let list = []
+
+                fetch('/api/catalog-list',
+                    {
+                        method: 'POST',
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+
+                    })
+                    .then(response => response.json())
+                    .then((response) => {
+                        if (response.text != 'not-login') {
+                            response.map(function (item) {
+                                list.push(item)
+                            })
+                            console.log(fields)
+                            for (let i = 0; i < fields.length; i++) {
+                                let htmlD = ''
+                                let selectedId = 0
+                                let el = document.getElementById('linkId' + i)
+                                htmlD += '<option value="0"></option>'
+
+                                for (let j = 0; j < list.length; j++) {
+                                    //  console.log(list[j].id, fields[i].link_table_id)
+                                    if (list[j].id === fields[i].link_table_id) {
+                                        selectedId = j + 1
+                                    }
+                                    // console.log(list[j])
+                                    htmlD += '<option value="' + list[j].id + '">' + list[j].name + '</option>'
+                                }
+                                el.innerHTML = htmlD
+                                el.selectedIndex = selectedId
+
+                            }
+
+
+                        } else {
+                            document.location = '/'
+                        }
+                    });
+
+
             }
 
             function getFields(isNew) {
@@ -261,11 +443,12 @@
                                 for (field of fields) {
 
                                     if (!field.is_nullable_db && field.name === '' && !field.is_identity) {
-                                        console.log(field)
+
                                         alert('Введите наименование для обязательных полей')
                                         return
                                     }
                                 }
+
                                 fetch('/api/save-db-fields',
                                     {
                                         method: 'POST',
