@@ -114,7 +114,7 @@ func GetCatalogById(user *model.User, id int, forForm bool) (r model.Catalog) {
 	fieldsDb, err := GetDbTableFields(user, r.TableName, false)
 	//табличная часть
 	query = `select id, name, catalog_id, name_db, name_type, max_length, precision, scale, is_nullable, is_identity, 
-       is_primary_key, is_nullable_db, is_list, is_form, link_table_id 
+       is_primary_key, is_nullable_db, is_list, is_form, link_table_id, is_user_create, is_user_modify, is_date_create, is_date_modify 
 			from utills_catalog_fields where catalog_id=` + strconv.Itoa(id)
 	if forForm {
 		query += ` and is_form=1 `
@@ -125,7 +125,8 @@ func GetCatalogById(user *model.User, id int, forForm bool) (r model.Catalog) {
 	for rows.Next() {
 		var f model.Field
 		err = rows.Scan(&f.Id, &f.Name, &f.CatalogId, &f.NameDb, &f.NameType, &f.MaxLength, &f.Precision, &f.Scale,
-			&f.IsNullable, &f.IsIdentity, &f.IsPrimaryKey, &f.IsNullableDb, &f.IsList, &f.IsForm, &f.LinkTableId)
+			&f.IsNullable, &f.IsIdentity, &f.IsPrimaryKey, &f.IsNullableDb, &f.IsList, &f.IsForm, &f.LinkTableId,
+			&f.IsUserCreate, &f.IsUserModify, &f.IsDateCreate, &f.IsDateModify)
 
 		name := f.Name
 		isNullDb := f.IsNullableDb
@@ -135,6 +136,10 @@ func GetCatalogById(user *model.User, id int, forForm bool) (r model.Catalog) {
 		isList := f.IsList
 		isForm := f.IsForm
 		linkTableId := f.LinkTableId
+		isUserCreate := f.IsUserCreate
+		isUserModify := f.IsUserModify
+		isDateCreate := f.IsDateCreate
+		isDateModify := f.IsDateModify
 		for _, field := range fieldsDb {
 			if field.NameDb == f.NameDb {
 				f = field
@@ -147,6 +152,12 @@ func GetCatalogById(user *model.User, id int, forForm bool) (r model.Catalog) {
 				f.IsList = isList
 				f.IsForm = isForm
 				f.LinkTableId = linkTableId
+
+				f.IsUserCreate = isUserCreate
+				f.IsUserModify = isUserModify
+				f.IsDateCreate = isDateCreate
+				f.IsDateModify = isDateModify
+
 			}
 		}
 		r.Fields = append(r.Fields, f)
@@ -208,14 +219,18 @@ func SaveCatalogFields(user *model.User, fields []model.Field) (err error) {
 	err = db.QueryRow(query).Scan(&isNew)
 	if isNew == 0 {
 		query = `insert into utills_catalog_fields (name, catalog_id, name_db, name_type, max_length, precision, scale,
-                                   is_nullable, is_identity, is_primary_key, is_nullable_db, is_list, is_form, link_table_id) values
+                                   is_nullable, is_identity, is_primary_key, is_nullable_db, is_list, is_form, link_table_id
+                                   , is_user_create, is_user_modify, is_date_create, is_date_modify ) values
 					(@name, @catalog_id, @name_db, @name_type, @max_length, @precision, @scale, @is_nullable, @is_identity, 
-					 @is_primary_key, @is_nullable_db, @is_list, @is_form, @link_table_id)`
+					 @is_primary_key, @is_nullable_db, @is_list, @is_form, @link_table_id,  @is_user_create,  @is_user_modify,
+					 @is_date_create,  @is_date_modify )`
 	} else {
 		query = `update utills_catalog_fields set name=@name, catalog_id=@catalog_id, name_db= @name_db, name_type = @name_type,
                                  max_length = @max_length, precision = @precision, scale = @scale, is_nullable = @is_nullable , 
                                  is_identity = @is_identity,  is_nullable_db=@is_nullable_db, is_primary_key = @is_primary_key, 
-                                 is_list = @is_list, is_form = @is_form, link_table_id = @link_table_id where id=@id`
+                                 is_list = @is_list, is_form = @is_form, link_table_id = @link_table_id, 
+                                 is_user_create = @is_user_create, is_user_modify = @is_user_modify, is_date_create = @is_date_create, is_date_modify = @is_date_modify
+                                 where id=@id`
 	}
 
 	var stmt *sql.Stmt
@@ -237,6 +252,10 @@ func SaveCatalogFields(user *model.User, fields []model.Field) (err error) {
 			sql.Named("is_list", field.IsList),
 			sql.Named("is_form", field.IsForm),
 			sql.Named("link_table_id", field.LinkTableId),
+			sql.Named("is_user_create", field.IsUserCreate),
+			sql.Named("is_user_modify", field.IsUserModify),
+			sql.Named("is_date_create", field.IsDateCreate),
+			sql.Named("is_date_modify", field.IsDateModify),
 		)
 		if err != nil {
 			log.Println(err.Error())

@@ -1,7 +1,7 @@
 {{template "base" .}}
 
 {{define "main"}}
-    <main class="form-main">
+    <main class="form-main-big">
         <div class="card">
             <div class="card-header">
                 Задача
@@ -11,11 +11,11 @@
                 <ul class="list-group list-group-flush">
                     <li class="list-group-item">
                         <div class="row">
-                            <div class="col-sm">
+                            <div class="col-3">
                                 <label for="name" class="form-label">Наименование</label>
                                 <input class="form-control" id="name" value={{ .Name}}>
                             </div>
-                            <div class="col-sm">
+                            <div class="col-3">
                                 <label for="table_db" class="form-label">Таблица БД</label>
                                 <input class="form-control" id="table_name" value={{ .TableName}}>
                             </div>
@@ -39,7 +39,7 @@
             th {
                 text-align: center;
                 vertical-align: middle;
-                background-color: #D3D3D3!important;
+                background-color: #D3D3D3 !important;
                 /*color: white!important;*/
             }
         </style>
@@ -99,6 +99,37 @@
                         fields[i].link_table_id = Number(elem.value)
 
                     }
+
+                    elem = document.getElementById('isUserCreate-' + i)
+
+                    if (elem && elem.checked) {
+                        fields[i].is_user_create = true
+                    } else {
+                        fields[i].is_user_create = false
+                    }
+
+                    elem = document.getElementById('isUserMod-' + i)
+                    if (elem &&  elem.checked) {
+                        fields[i].is_user_modify = true
+                    } else {
+                        fields[i].is_user_modify = false
+                    }
+
+                    elem = document.getElementById('isDateCreate-' + i)
+                    if (elem && elem.checked) {
+                        fields[i].is_date_create = true
+                    } else {
+                        fields[i].is_date_create = false
+                    }
+
+                    elem = document.getElementById('isDateMod-' + i)
+                    if (elem && elem.checked) {
+                        fields[i].is_date_modify = true
+                    } else {
+                        fields[i].is_date_modify = false
+                    }
+
+
                     //fields[i].is_list = !elem.checked
 
                     // }
@@ -127,8 +158,17 @@
                 // if (fIsNotNull.checked) {
                 //
                 // }
-                fIsForm.disabled = !fName.value
-                fIsForm.checked = fName.value
+                const fIsDateCreate =   document.getElementById('isDateCreate-' + id)
+                const fisDateMod =   document.getElementById('isDateMod-' + id)
+                const fisUserCreate =   document.getElementById('isUserCreate-' + id)
+                const fisUserMod =   document.getElementById('isUserMod-' + id)
+                if (fIsDateCreate.checked || fisDateMod.checked || fisUserCreate.checked || fisUserMod.checked) {
+                    fIsForm.disabled = true
+                    fIsForm.checked = false
+                } else {
+                    fIsForm.disabled = !fName.value
+                    fIsForm.checked = fName.value
+                }
             }
 
             function changeCreateModify(elem) {
@@ -160,7 +200,7 @@
                 }
                 idDisableOnlyStr = idDisable
                 idDisable += arr[1]
-
+                let elForm = document.getElementById('isForm'+arr[1])
                 let elemDis = document.getElementById(idDisable)
                 if (elem.checked) {
 
@@ -179,10 +219,13 @@
 
                         }
                     }
+                    elForm.checked=false
+                    elForm.disabled=true
 
                 } else {
 
                     elemDis.disabled = false
+                    elForm.disabled=false
                 }
 
             }
@@ -191,7 +234,7 @@
 
                 let html = ''
                 let counter = 0
-                html +='<tr>'
+                html += '<tr>'
 
                 html += '<th rowspan="2" >Поле</th>'
                 html += '<th rowspan="2" >Наименование</th>'
@@ -206,7 +249,7 @@
                 // html += '<th>Точность</th>'
                 // html += '<th>Масштаб</th>'
                 html += '<th rowspan="2" >Счетчик</th>'
-                html +='</tr>'
+                html += '</tr>'
 //////////////////
 
                 html += '<tr>'
@@ -282,7 +325,9 @@
                     //////////////
                     //Выпадающий список
                     html += '<td>'
-                    html += ' <select id="linkId' + counter + '" name="task" class="form-select"></select> '
+                    if  (item.name_type == 'int' && !item.is_identity) {
+                        html += ' <select id="linkId' + counter + '" name="task" class="form-select"></select> '
+                    }
 
                     html += '</td>'
                     html += '<td>' + item.name_type + '</td>'
@@ -295,6 +340,9 @@
                     if (item.name_type == 'varchar') {
                         html += '<div class="form-check form-switch">' +
                             '<input onchange="changeCreateModify(this)"  class="form-check-input mx-auto" style="font-size: 24px" type="checkbox"  id=isUserCreate-' + counter
+                        if (item.is_user_create) {
+                            html += ' checked '
+                        }
                     }
                     html += ' </td>'
                     //Изменил
@@ -302,6 +350,9 @@
                     if (item.name_type == 'varchar') {
                         html += '<div class="form-check form-switch">' +
                             '<input onchange="changeCreateModify(this)"  class="form-check-input mx-auto" style="font-size: 24px" type="checkbox"  id=isUserMod-' + counter
+                        if (item.is_user_modify) {
+                            html += ' checked '
+                        }
                     }
                     html += ' </td>'
                     ///////
@@ -313,6 +364,9 @@
                     if (item.name_type == 'date') {
                         html += '<div class="form-check form-switch">' +
                             '<input onchange="changeCreateModify(this)" class="form-check-input mx-auto" style="font-size: 24px" type="checkbox"  id=isDateCreate-' + counter
+                        if (item.is_date_create) {
+                            html += ' checked '
+                        }
                     }
                     html += ' </td>'
                     //Изменения
@@ -320,6 +374,9 @@
                     if (item.name_type == 'date') {
                         html += '<div class="form-check form-switch">' +
                             '<input  onchange="changeCreateModify(this)" class="form-check-input mx-auto" style="font-size: 24px" type="checkbox"  id=isDateMod-' + counter
+                        if (item.is_date_modify) {
+                            html += ' checked '
+                        }
                     }
                     html += ' </td>'
                     ///////
@@ -354,7 +411,7 @@
                             response.map(function (item) {
                                 list.push(item)
                             })
-                            console.log(fields)
+
                             for (let i = 0; i < fields.length; i++) {
                                 let htmlD = ''
                                 let selectedId = 0
@@ -369,8 +426,10 @@
                                     // console.log(list[j])
                                     htmlD += '<option value="' + list[j].id + '">' + list[j].name + '</option>'
                                 }
-                                el.innerHTML = htmlD
-                                el.selectedIndex = selectedId
+                                if (el) {
+                                    el.innerHTML = htmlD
+                                    el.selectedIndex = selectedId
+                                }
 
                             }
 
@@ -448,7 +507,7 @@
                                         return
                                     }
                                 }
-
+                                console.log(fields)
                                 fetch('/api/save-db-fields',
                                     {
                                         method: 'POST',

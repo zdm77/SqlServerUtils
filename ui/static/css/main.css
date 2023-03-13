@@ -4,7 +4,12 @@
     padding: 15px;
     margin: auto;
 }
-
+.form-main-big {
+    width: 100%;
+    max-width: 1800px;
+    padding: 15px;
+    margin: auto;
+}
 .dtHorizontalExampleWrapper {
     max-width: 600px;
     margin: 0 auto;

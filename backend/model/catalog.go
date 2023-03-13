@@ -25,6 +25,10 @@ type Field struct {
 	IsList       bool   `json:"is_list"`
 	IsForm       bool   `json:"is_form"`
 	LinkTableId  int    `json:"link_table_id"`
+	IsUserCreate bool   `json:"is_user_create"`
+	IsUserModify bool   `json:"is_user_modify"`
+	IsDateCreate bool   `json:"is_date_create"`
+	IsDateModify bool   `json:"is_date_modify"`
 }
 type LinkTable struct {
 	Id int `json:"id"`
