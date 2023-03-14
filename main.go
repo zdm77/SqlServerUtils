@@ -70,7 +70,8 @@ func main() {
 
 	mux.HandleFunc("/api/upload", task_route.TaskUploadHandler)
 	mux.HandleFunc("/api/task-exe", task_route.TaskExeHandler)
-
+	//доступ
+	mux.HandleFunc("/api/get-access-catalog-record", catalog_work_route.CatalogAccessRecordHandler)
 	//mux.HandleFunc("/login", route.Login)
 	host, _ := os.Hostname()
 

@@ -4,32 +4,28 @@
     <head>
         <link rel='stylesheet' href='/static/css/bootstrap.min.css'/>
         <link rel='stylesheet' href='/static/font/bootstrap-icons.css'/>
-
-
-{{/*        <link rel='stylesheet' href='/static/css/jquery.dataTables.min.css'/>*/}}
+        {{/*        <link rel='stylesheet' href='/static/css/jquery.dataTables.min.css'/>*/}}
         <link rel='stylesheet' href='/static/css/dataTables.bootstrap5.min.css'/>
         <script src="/static/js/jquery-3.6.3.min.js"></script>
-{{/*        <link href="https://cdn.datatables.net/1.13.3/css/jquery.dataTables.css">*/}}
-
+        {{/*        <link href="https://cdn.datatables.net/1.13.3/css/jquery.dataTables.css">*/}}
         <script src="/static/js/jquery.dataTables.min.js"></script>
         <script src="/static/js/dataTables.bootstrap5.min.js"></script>
-
-{{/*скроллер*/}}
-
+        {{/*скроллер*/}}
         <script src="/static/js/dataTables.scroller.min.js"></script>
         <script src="/static/js/scroller.bootstrap5.min.js"></script>
-{{/*        col reorder*/}}
+        {{/*        col reorder*/}}
         <script src="/static/js/colReorder.bootstrap5.js"></script>
         <script src="/static/js/dataTables.colReorder.min.js"></script>
         <link rel='stylesheet' href='/static/css/colReorder.bootstrap5.min.css'/>
-{{/*         search*/}}
-{{/*        <script src="/static/js/dataTables.select.min.js"></script>*/}}
-{{/*        <script src="/static/js/dataTables.searchPanes.min.js"></script>*/}}
-{{/*        <link rel='stylesheet' href='/static/css/searchPanes.bootstrap5.min.css'/>*/}}
-{{/*        <link rel='stylesheet' href='/static/css/searchPanes.dataTables.min.css'/>*/}}
-{{/*группировка*/}}
-{{/*        <script src="/static/js/dataTables.rowGroup.min.js"></script>*/}}
+        {{/*         search*/}}
+        {{/*        <script src="/static/js/dataTables.select.min.js"></script>*/}}
+        {{/*        <script src="/static/js/dataTables.searchPanes.min.js"></script>*/}}
+        {{/*        <link rel='stylesheet' href='/static/css/searchPanes.bootstrap5.min.css'/>*/}}
+        {{/*        <link rel='stylesheet' href='/static/css/searchPanes.dataTables.min.css'/>*/}}
+        {{/*группировка*/}}
+        {{/*        <script src="/static/js/dataTables.rowGroup.min.js"></script>*/}}
         <script src="/static/js/bootstrap.bundle.min.js"></script>
+        {{/*        <script src="/static/js/bootstrap.min.js"></script>*/}}
         <style>
         </style>
     </head>
@@ -37,7 +33,7 @@
     <nav class="navbar navbar-expand-sm navbar-dark bg-dark" aria-label="Third navbar example">
         <div class="container-fluid">
             <div class="collapse navbar-collapse" id="navbarsExample03">
-{{/*                <a href="/test">LLLLLLLLLL</a>*/}}
+                {{/*                <a href="/test">LLLLLLLLLL</a>*/}}
                 <ul class="navbar-nav me-auto mb-2 mb-sm-0">
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="dropdown03" data-bs-toggle="dropdown"
@@ -49,25 +45,25 @@
                                             style="margin-left: 10px">Шаблоны справочников</span></a></li>
                             <li><a class="dropdown-item bi-journal-text" href="/catalog-list/?id=Задачи"><span
                                             style="margin-left: 10px">Шаблоны задач</span></a></li>
-{{/*                            <li>*/}}
-{{/*                                <a class="dropdown-item"  href="#">*/}}
-{{/*                                    Контрагенты &raquo;*/}}
-{{/*                                </a>*/}}
-{{/*                                <ul class="dropdown-menu dropdown-submenu">*/}}
-{{/*                                    <li>*/}}
-{{/*                                        <a class="dropdown-item" href="#">Шаблон справочника</a>*/}}
-{{/*                                    </li>*/}}
-{{/*                                    <li>*/}}
-{{/*                                        <a class="dropdown-item" href="#">Шаблон задачи</a>*/}}
-{{/*                                    </li>*/}}
-{{/*                                    <li>*/}}
-{{/*                                        <a class="dropdown-item" href="#">Статусы задач</a>*/}}
-{{/*                                    </li>*/}}
-{{/*                                    <li>*/}}
-{{/*                                        <a class="dropdown-item" href="#">Доступ</a>*/}}
-{{/*                                    </li>*/}}
-{{/*                                </ul>*/}}
-{{/*                            </li>*/}}
+                            {{/*                            <li>*/}}
+                            {{/*                                <a class="dropdown-item"  href="#">*/}}
+                            {{/*                                    Контрагенты &raquo;*/}}
+                            {{/*                                </a>*/}}
+                            {{/*                                <ul class="dropdown-menu dropdown-submenu">*/}}
+                            {{/*                                    <li>*/}}
+                            {{/*                                        <a class="dropdown-item" href="#">Шаблон справочника</a>*/}}
+                            {{/*                                    </li>*/}}
+                            {{/*                                    <li>*/}}
+                            {{/*                                        <a class="dropdown-item" href="#">Шаблон задачи</a>*/}}
+                            {{/*                                    </li>*/}}
+                            {{/*                                    <li>*/}}
+                            {{/*                                        <a class="dropdown-item" href="#">Статусы задач</a>*/}}
+                            {{/*                                    </li>*/}}
+                            {{/*                                    <li>*/}}
+                            {{/*                                        <a class="dropdown-item" href="#">Доступ</a>*/}}
+                            {{/*                                    </li>*/}}
+                            {{/*                                </ul>*/}}
+                            {{/*                            </li>*/}}
                         </ul>
                     </li>
                     <li class="nav-item dropdown">
@@ -77,8 +73,20 @@
                             <li><a class="dropdown-item" href="/task1">Загрузка Excel</a></li>
                         </ul>
                     </li>
-                    <li class="nav-item dropdown" id="catalogList">
-                    <li class="nav-item dropdown" id="catalogTask">
+                    <li class="nav-item dropdown">
+                        <a onclick="getCatalogList('catalogList', 'Справочники')" class="nav-link dropdown-toggle"
+                           href="#" id="dropdown03"
+                           data-bs-toggle="dropdown" aria-expanded="false">Справочники</a>
+                        <ul class="dropdown-menu" aria-labelledby="dropdown03" id="catalogList">
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a onclick="getCatalogList('catalogTask', 'Задачи')" class="nav-link dropdown-toggle" href="#"
+                           id="dropdown03"
+                           data-bs-toggle="dropdown" aria-expanded="false">Задачи</a>
+                        <ul class="dropdown-menu" aria-labelledby="dropdown03" id="catalogTask">
+                        </ul>
+                    </li>
                 </ul>
             </div>
             <div class="form-inline my-2 my-lg-0">
@@ -89,20 +97,9 @@
     </nav>
     </body>
     <script>
-        getCatalogList()
-
-        function getCatalogList() {
-            let htmlCatalog = ''
-            let htmlTask = ''
-            let data = []
-            htmlCatalog += ' <a class="nav-link dropdown-toggle" href="#" id="dropdown03" data-bs-toggle="dropdown" '
-            htmlCatalog += ' aria-expanded="false">Справочники</a> '
-            htmlCatalog += ' <ul class="dropdown-menu" aria-labelledby="dropdown03"> '
-
-            htmlTask += ' <a class="nav-link dropdown-toggle" href="#" id="dropdown03" data-bs-toggle="dropdown" '
-            htmlTask += ' aria-expanded="false">Задачи</a> '
-            htmlTask += ' <ul class="dropdown-menu" aria-labelledby="dropdown03"> '
-            fetch('/api/catalog-list/',
+        function getCatalogList(elemId, typeEntity) {
+            let html = ''
+            fetch('/api/catalog-list/?id=' + typeEntity,
                 {
                     method: 'POST',
                     headers: {
@@ -115,32 +112,20 @@
 
                     if (response.text != 'not-login') {
                         response.map(function (item) {
-                            let val =   '<li><a class="dropdown-item" href="/catalog-work-list/?id=$id">' + item.name + '</a></li> '
+                            let val = '<li><a class="dropdown-item" href="/catalog-work-list/?id=$id">' + item.name + '</a></li> '
                             val = val.replaceAll("$id", item.id)
-                            if (item.type_entity=='Справочники') {
-                                htmlCatalog += val
-                            } else {
-                                htmlTask += val
-                            }
-
+                            html += val
 
                         })
                     } else {
                         document.location = '/'
                     }
-
-
-
-                    htmlCatalog += ' </ul> '
-                    htmlTask += ' </ul> '
-
-                    let catalogList = document.getElementById('catalogList')
-                    catalogList.innerHTML = htmlCatalog
-
-                    let catalogTask = document.getElementById('catalogTask')
-                    catalogTask.innerHTML = htmlTask
+                    let elem = document.getElementById(elemId)
+                    elem.innerHTML = html
 
                 })
         }
+
+
     </script>
 {{end}}

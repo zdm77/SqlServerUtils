@@ -139,12 +139,12 @@ func GetCatalogById(user *model.User, id int, forForm bool) (r model.Catalog) {
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
 	//основа
-	query := `select  id, name, table_name from utils_catalog_list where id = @Id`
+	query := `select  id, name, table_name, type_entity from utils_catalog_list where id = @Id`
 
 	stmt, err := db.Prepare(query)
 	row := stmt.QueryRow(sql.Named("Id", id))
 
-	err = row.Scan(&r.Id, &r.Name, &r.TableName)
+	err = row.Scan(&r.Id, &r.Name, &r.TableName, &r.TypeEntity)
 	if err != nil {
 		log.Println(err.Error())
 	}
@@ -230,6 +230,9 @@ func GetCatalogById(user *model.User, id int, forForm bool) (r model.Catalog) {
 				}
 			}
 		}
+	}
+	if r.TypeEntity == "Задачи" {
+		r.IsCatalogTask = true
 	}
 	return r
 }

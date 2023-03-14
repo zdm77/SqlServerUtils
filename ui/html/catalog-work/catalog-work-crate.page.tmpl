@@ -1,24 +1,60 @@
 {{template "base" .}}
 
 {{define "main"}}
+
     <main class="form-main">
         <div class="card">
             <div class="card-header">
             </div>
-            <ul class="list-group list-group-flush">
-                <li class="list-group-item">
-                    <div class="col-6">
-                        {{template "save"}}
+            {{if .IsCatalogTask}}
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">
+                        <div class="col-6">
+                            {{template "save"}}
+                        </div>
+                    </li>
+                    <li class="list-group-item">
+                        <table id="json_data"
+                               class="table table-striped table-bordered table-sm table-responsive"></table>
+                    </li>
+                </ul>
+
+
+            {{else}}
+                <div class="m-4">
+                    <ul class="nav nav-tabs" id="myTab">
+                        <li class="nav-item">
+                            <a href="#home" class="nav-link active" data-bs-toggle="tab">Данные</a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#access" class="nav-link" data-bs-toggle="tab">Доступ</a>
+                        </li>
+                    </ul>
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="home">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item">
+                                    <div class="col-6">
+                                        {{template "save"}}
+                                    </div>
+                                </li>
+                                <li class="list-group-item">
+                                    <table id="json_data"
+                                           class="table table-striped table-bordered table-sm table-responsive"></table>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="tab-pane fade" id="access">
+                            <table id="access_data"
+                                   class="table table-striped table-bordered table-sm table-responsive"></table>
+                        </div>
                     </div>
-                </li>
-                <li class="list-group-item">
-                    <table id="json_data"
-                           class="table table-striped table-bordered table-sm table-responsive"></table>
-                </li>
-            </ul>
+                </div>
+            {{end}}
         </div>
         <script>
             const table = document.getElementById('json_data')
+            const tableAccess = document.getElementById('access_data')
 
             function valid() {
                 // if (name.value === '' || tableDb.value === '') {
@@ -30,6 +66,30 @@
 
             let idsNotNull = []
             let listListIdent = []
+
+            function renderAccess() {
+                let html = ''
+                fetch('/api/get-access-catalog-record',
+                    {
+                        method: 'POST',
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            id: data.entity_id,
+                            table: data.table_name,
+                        })
+
+                    })
+                    .then(response => response.json())
+                    .then((response) => {
+                        if (response) {
+                            response.map(function (item) {
+
+                            })
+                        }
+                    })
+            }
 
             function renderTable() {
 
@@ -198,6 +258,7 @@
                 let
             entityId = {{ .EntityId}}
                 renderTable()
+            renderAccess()
         </script>
     </main>
 {{end}}

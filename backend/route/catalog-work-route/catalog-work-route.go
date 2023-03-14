@@ -151,3 +151,25 @@ func CatalogWorkListDeleteListHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write(data)
 	}
 }
+
+func CatalogAccessRecordHandler(w http.ResponseWriter, r *http.Request) {
+	user := session.GetSessionData(r)
+	if user != nil {
+		decoder := json.NewDecoder(r.Body)
+		type Param struct {
+			Id    int    `json:"id"`
+			Table string `json:"table"`
+		}
+		var param Param
+		err := decoder.Decode(&param)
+		if err != nil {
+			log.Println(err.Error())
+		}
+		_, list := db_catalog_work.GetCatalogAccessRecord(user, param.Id, param.Table)
+		data, _ := json.Marshal(list)
+		w.Write(data)
+	} else {
+		data, _ := json.Marshal(route.Message{Text: "not-login"})
+		w.Write(data)
+	}
+}

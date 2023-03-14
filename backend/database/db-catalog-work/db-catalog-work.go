@@ -331,3 +331,42 @@ func DeleteCatalogWorkList(user *model.User, id, catalogId int) (err error) {
 
 	return err
 }
+
+func GetCatalogAccessRecord(user *model.User, id int, table string) (err error, result []model.AccessRecord) {
+	db, _ := database.GetDb(user.ConnString)
+	defer db.Close()
+	query := `select access from ` + table + ` where id = ` + strconv.Itoa(id)
+	var usersInTableStr string
+	err = db.QueryRow(query).Scan(&usersInTableStr)
+	usersInTable := strings.Split(usersInTableStr, ",")
+	query = `select name from master.sys.server_principals where type_desc ='SQL_LOGIN'  and is_disabled=0`
+	rows, err := db.Query(query)
+	if err != nil {
+		log.Println(err.Error())
+	}
+	defer rows.Close()
+	var usersAll []string
+	for rows.Next() {
+		var n string
+		err = rows.Scan(&n)
+		if err != nil {
+			log.Println(err.Error())
+		}
+		usersAll = append(usersAll, n)
+	}
+	for _, user := range usersAll {
+		isAccess := false
+		for _, u := range usersInTable {
+			if u == user {
+				isAccess = true
+				break
+			}
+		}
+		result = append(result, model.AccessRecord{
+			UserName: user,
+			Access:   isAccess,
+		})
+	}
+
+	return err, result
+}

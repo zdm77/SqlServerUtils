@@ -71,6 +71,7 @@ func CatalogCreateHandler(w http.ResponseWriter, r *http.Request) {
 		"./ui/html/top.layout.tmpl",
 		"./ui/html/controls/save.tmpl",
 	}
+
 	catalog := model.Catalog{
 		Id:         0,
 		EntityId:   0,

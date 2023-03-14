@@ -6,3 +6,8 @@ type User struct {
 	ConnString string
 	DbName     string
 }
+
+type AccessRecord struct {
+	UserName string
+	Access   bool
+}
