@@ -35,11 +35,14 @@ WHERE
 	defer rows.Close()
 	for rows.Next() {
 		var f model.Field
+
 		err = rows.Scan(&f.NameDb, &f.NameType, &f.MaxLength, &f.Precision, &f.Scale, &f.IsNullable, &f.IsIdentity, &f.IsPrimaryKey, &f.IsNullableDb)
 		//if forIsNew && f.IsPrimaryKey == false {
 		//	f.IsList = true
 		//}
-		fields = append(fields, f)
+		if f.NameDb != "access" {
+			fields = append(fields, f)
+		}
 	}
 
 	return fields, err
@@ -57,7 +60,11 @@ func GetCatalogList(user *model.User, typeName string) (result []model.Catalog) 
 	//	}
 	//}
 
-	query = `select  id, name, table_name from utils_catalog_list where type_entity='` + typeName + `' order by id`
+	query = `select  id, name, table_name, type_entity from utils_catalog_list `
+	if typeName != "" {
+		query += ` where type_entity='` + typeName + `'`
+	}
+	query += ` order by  type_entity, id `
 	rows, err := db.Query(query)
 	defer rows.Close()
 	if err != nil {
@@ -65,7 +72,7 @@ func GetCatalogList(user *model.User, typeName string) (result []model.Catalog) 
 	}
 	for rows.Next() {
 		var r model.Catalog
-		err = rows.Scan(&r.Id, &r.Name, &r.TableName)
+		err = rows.Scan(&r.Id, &r.Name, &r.TableName, &r.TypeEntity)
 		if err != nil {
 
 		}
@@ -81,6 +88,35 @@ func SaveCatalog(user *model.User, param model.Catalog) (err error, id int) {
 	var stmt *sql.Stmt
 
 	if param.Id == 0 {
+		//пробуем создать таблицу, если не существует
+
+		query = `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE' and TABLE_CATALOG='` + user.DbName + `'`
+		rows, _ := db.Query(query)
+		isNewTable := true
+		for rows.Next() {
+			var table string
+			rows.Scan(&table)
+			if table == param.TableName {
+				isNewTable = false
+				break
+			}
+
+		}
+		if isNewTable {
+			query = `create table ` + param.TableName + `
+			(
+				id   int identity
+					constraint ` + param.TableName + `_pk
+						primary key,
+				name varchar(255) not null,
+				access  ntext
+			)`
+			_, err = db.Exec(query)
+			if err != nil {
+				log.Println(err.Error())
+			}
+		}
+
 		query = `insert into utils_catalog_list (name, table_name, type_entity)
 					values (@Name, @TableDb, @TypeEntity);  SELECT SCOPE_IDENTITY()`
 	} else {

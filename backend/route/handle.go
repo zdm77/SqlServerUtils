@@ -76,11 +76,14 @@ func DoLogin(w http.ResponseWriter, r *http.Request) {
 		userSession.IsLogin = true
 		userSession.Login = login
 		userSession.ConnString = connStr
+		userSession.DbName = dbName
 		session.Save(userSession, w, r)
 		files := []string{
+
 			"./ui/html/home.page.tmpl",
 			"./ui/html/base.layout.tmpl",
 			"./ui/html/top.layout.tmpl",
+			//"./ui/html/utils.tmpl",
 		}
 		tpl, err := template.ParseFiles(files...)
 		if err != nil {

@@ -42,6 +42,30 @@ func GetCatalogWorkListById(user *model.User, id int) (err error, result FieldVa
 	var valuesId []string
 	//var catalogRes model.Catalog
 	var joinTables string
+	queryAccess := `select id, access from ` + catalog.TableName
+	type Access struct {
+		id    string
+		user  []string
+		users string
+	}
+	//var access []Access
+	var ids []string
+	rows, err := db.Query(queryAccess)
+	isAccessInTable := false
+	if err == nil {
+		isAccessInTable = true
+		for rows.Next() {
+			var a Access
+			rows.Scan(&a.id, &a.users)
+			users := strings.Split(a.users, ",")
+			for _, u := range users {
+				u = strings.TrimSpace(u)
+				if u == user.Login {
+					ids = append(ids, a.id)
+				}
+			}
+		}
+	}
 	for _, cat := range catalog.Fields {
 
 		var field string
@@ -69,6 +93,9 @@ func GetCatalogWorkListById(user *model.User, id int) (err error, result FieldVa
 	}
 	query += strings.Join(fields, ",") + " from " + catalog.TableName
 	query += joinTables
+	if isAccessInTable {
+		query += ` where ` + catalog.TableName + `.id in (` + strings.Join(ids, ",") + `) `
+	}
 	query += "  for json auto "
 	var jsonString string
 	err = db.QueryRow(query).Scan(&jsonString)

@@ -41,7 +41,7 @@
                 <ul class="navbar-nav me-auto mb-2 mb-sm-0">
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="dropdown03" data-bs-toggle="dropdown"
-                           aria-expanded="false">Справочники</a>
+                           aria-expanded="false">Админка</a>
                         <ul class="dropdown-menu" aria-labelledby="dropdown03">
                             <li><a class="dropdown-item bi-list-task" href="/task-list-catalog"><span
                                             style="margin-left: 10px">Задачи загрузки</span></a></li>
@@ -78,6 +78,7 @@
                         </ul>
                     </li>
                     <li class="nav-item dropdown" id="catalogList">
+                    <li class="nav-item dropdown" id="catalogTask">
                 </ul>
             </div>
             <div class="form-inline my-2 my-lg-0">
@@ -91,14 +92,17 @@
         getCatalogList()
 
         function getCatalogList() {
+            let htmlCatalog = ''
+            let htmlTask = ''
+            let data = []
+            htmlCatalog += ' <a class="nav-link dropdown-toggle" href="#" id="dropdown03" data-bs-toggle="dropdown" '
+            htmlCatalog += ' aria-expanded="false">Справочники</a> '
+            htmlCatalog += ' <ul class="dropdown-menu" aria-labelledby="dropdown03"> '
 
-            let html = '' +
-                ' '
-
-            html += ' <a class="nav-link dropdown-toggle" href="#" id="dropdown03" data-bs-toggle="dropdown" '
-            html += ' aria-expanded="false">Ведение справочников</a> '
-            html += ' <ul class="dropdown-menu" aria-labelledby="dropdown03"> '
-            fetch('/api/catalog-list/?id=Справочники',
+            htmlTask += ' <a class="nav-link dropdown-toggle" href="#" id="dropdown03" data-bs-toggle="dropdown" '
+            htmlTask += ' aria-expanded="false">Задачи</a> '
+            htmlTask += ' <ul class="dropdown-menu" aria-labelledby="dropdown03"> '
+            fetch('/api/catalog-list/',
                 {
                     method: 'POST',
                     headers: {
@@ -111,16 +115,30 @@
 
                     if (response.text != 'not-login') {
                         response.map(function (item) {
-                            html += '<li><a class="dropdown-item" href="/catalog-work-list/?id=$id">' + item.name + '</a></li> '
-                            html = html.replaceAll("$id", item.id)
+                            let val =   '<li><a class="dropdown-item" href="/catalog-work-list/?id=$id">' + item.name + '</a></li> '
+                            val = val.replaceAll("$id", item.id)
+                            if (item.type_entity=='Справочники') {
+                                htmlCatalog += val
+                            } else {
+                                htmlTask += val
+                            }
+
+
                         })
                     } else {
                         document.location = '/'
                     }
-                    html += ' </ul> '
+
+
+
+                    htmlCatalog += ' </ul> '
+                    htmlTask += ' </ul> '
 
                     let catalogList = document.getElementById('catalogList')
-                    catalogList.innerHTML = html
+                    catalogList.innerHTML = htmlCatalog
+
+                    let catalogTask = document.getElementById('catalogTask')
+                    catalogTask.innerHTML = htmlTask
 
                 })
         }
