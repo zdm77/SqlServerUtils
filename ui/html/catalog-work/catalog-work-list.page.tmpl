@@ -60,10 +60,13 @@
                                 let row = vals[i]
                                 html += '<tr>'
                                 let valId = response.values_id[i].replaceAll('"', '')
+                               // let valId =response.values_id[i]
+                                console.log(valId)
                                 for (let j = 0; j < row.length; j++) {
                                     if (response.is_list[j]) {
                                         if (fieldIdIdx !== j) {
-                                            let val = row[j].replaceAll('"', '')
+                                           // let val = row[j].replaceAll('"', '')
+                                            let val = row[j].replaceAll('\\', '')
                                             html += '<td>'
                                             if (val === 'unchecked') {
                                                 val = ''

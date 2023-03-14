@@ -1,11 +1,12 @@
 package model
 
 type Catalog struct {
-	Id        int     `json:"id"`
-	EntityId  int     `json:"entity_id"`
-	Name      string  `json:"name"`
-	TableName string  `json:"table_name"`
-	Fields    []Field `json:"fields"`
+	Id         int     `json:"id"`
+	EntityId   int     `json:"entity_id"`
+	Name       string  `json:"name"`
+	TableName  string  `json:"table_name"`
+	Fields     []Field `json:"fields"`
+	TypeEntity string  `json:"type_entity"`
 }
 type Field struct {
 	Id           int    `json:"id"`
@@ -31,5 +32,6 @@ type Field struct {
 	IsDateModify bool   `json:"is_date_modify"`
 }
 type LinkTable struct {
-	Id int `json:"id"`
+	Id   int    `json:"id"`
+	Name string `json:"name"`
 }

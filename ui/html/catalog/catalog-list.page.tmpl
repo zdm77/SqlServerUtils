@@ -19,13 +19,15 @@
 
 
         <script>
-
+            let typeEntity = {{ .}}
             function create(){
-                document.location='/catalog-create'
+                document.location='/catalog-create/?typeId='+typeEntity
+               // document.location='/catalog-create'
             }
             renderData()
             function renderData() {
-                fetch('/api/catalog-list',
+
+                fetch('/api/catalog-list/?id='+typeEntity,
                     {
                         method: 'POST',
                         headers: {
@@ -80,6 +82,7 @@
            // $(document).ready(function () {
 
             //});
+
         </script>
     </main>
 {{end}}

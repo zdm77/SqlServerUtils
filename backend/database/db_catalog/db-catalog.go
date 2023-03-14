@@ -44,7 +44,7 @@ WHERE
 
 	return fields, err
 }
-func GetCatalogList(user *model.User) (result []model.Catalog) {
+func GetCatalogList(user *model.User, typeName string) (result []model.Catalog) {
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
 	var query string
@@ -57,7 +57,7 @@ func GetCatalogList(user *model.User) (result []model.Catalog) {
 	//	}
 	//}
 
-	query = `select  id, name, table_name from utils_catalog_list order by id`
+	query = `select  id, name, table_name from utils_catalog_list where type_entity='` + typeName + `' order by id`
 	rows, err := db.Query(query)
 	defer rows.Close()
 	if err != nil {
@@ -81,8 +81,8 @@ func SaveCatalog(user *model.User, param model.Catalog) (err error, id int) {
 	var stmt *sql.Stmt
 
 	if param.Id == 0 {
-		query = `insert into utils_catalog_list (name, table_name)
-					values (@Name, @TableDb);  SELECT SCOPE_IDENTITY()`
+		query = `insert into utils_catalog_list (name, table_name, type_entity)
+					values (@Name, @TableDb, @TypeEntity);  SELECT SCOPE_IDENTITY()`
 	} else {
 		query = `update  utils_catalog_list set name = @Name, table_name = @TableDb where id = @Id`
 	}
@@ -90,6 +90,7 @@ func SaveCatalog(user *model.User, param model.Catalog) (err error, id int) {
 	err = stmt.QueryRow(sql.Named("Name", param.Name),
 		sql.Named("TableDb", param.TableName),
 		sql.Named("Id", param.Id),
+		sql.Named("TypeEntity", param.TypeEntity),
 	).Scan(&id)
 
 	if err != nil && err.Error() != "sql: no rows in result set" {
@@ -274,4 +275,21 @@ func DeleteCatalogList(user *model.User, id int) (err error) {
 	_, err = db.Exec(query)
 
 	return err
+}
+func GetLinkList(user *model.User, id int) (err error, data []model.LinkTable) {
+	db, _ := database.GetDb(user.ConnString)
+	defer db.Close()
+	//получаем таблицу по айди
+	query := `select  table_name from  utils_catalog_list where id = ` + strconv.Itoa(id)
+	var tableName string
+	err = db.QueryRow(query).Scan(&tableName)
+	query = `select id, name from ` + tableName + ` order by id`
+	rows, err := db.Query(query)
+	defer rows.Close()
+	for rows.Next() {
+		var d model.LinkTable
+		err = rows.Scan(&d.Id, &d.Name)
+		data = append(data, d)
+	}
+	return err, data
 }

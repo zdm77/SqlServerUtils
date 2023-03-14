@@ -45,8 +45,10 @@
                         <ul class="dropdown-menu" aria-labelledby="dropdown03">
                             <li><a class="dropdown-item bi-list-task" href="/task-list-catalog"><span
                                             style="margin-left: 10px">Задачи загрузки</span></a></li>
-                            <li><a class="dropdown-item bi-journal-text" href="/catalog-list"><span
+                            <li><a class="dropdown-item bi-journal-text" href="/catalog-list/?id=Справочники"><span
                                             style="margin-left: 10px">Шаблоны справочников</span></a></li>
+                            <li><a class="dropdown-item bi-journal-text" href="/catalog-list/?id=Задачи"><span
+                                            style="margin-left: 10px">Шаблоны задач</span></a></li>
 {{/*                            <li>*/}}
 {{/*                                <a class="dropdown-item"  href="#">*/}}
 {{/*                                    Контрагенты &raquo;*/}}
@@ -96,7 +98,7 @@
             html += ' <a class="nav-link dropdown-toggle" href="#" id="dropdown03" data-bs-toggle="dropdown" '
             html += ' aria-expanded="false">Ведение справочников</a> '
             html += ' <ul class="dropdown-menu" aria-labelledby="dropdown03"> '
-            fetch('/api/catalog-list',
+            fetch('/api/catalog-list/?id=Справочники',
                 {
                     method: 'POST',
                     headers: {

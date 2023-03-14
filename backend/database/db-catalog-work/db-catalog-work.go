@@ -1,7 +1,6 @@
 package db_catalog_work
 
 import (
-	"fmt"
 	"log"
 	"sqlutils/backend/database"
 	"sqlutils/backend/database/db_catalog"
@@ -21,6 +20,13 @@ type FieldVals struct {
 	IsList      []bool     `json:"is_list"`
 }
 
+func GetTableLinkById(user *model.User, id int) (err error, table string) {
+	db, _ := database.GetDb(user.ConnString)
+	defer db.Close()
+	query := `select table_name from utils_catalog_list where id=` + strconv.Itoa(id)
+	err = db.QueryRow(query).Scan(&table)
+	return err, table
+}
 func GetCatalogWorkListById(user *model.User, id int) (err error, result FieldVals) {
 
 	db, _ := database.GetDb(user.ConnString)
@@ -35,12 +41,22 @@ func GetCatalogWorkListById(user *model.User, id int) (err error, result FieldVa
 	var fieldId string
 	var valuesId []string
 	//var catalogRes model.Catalog
+	var joinTables string
 	for _, cat := range catalog.Fields {
+
+		var field string
 		if cat.IsPrimaryKey {
 			fieldId = cat.NameDb
 		}
 		if cat.IsIdentity || cat.Name != "" || !cat.IsNullable || !cat.IsNullableDb {
-			field := "coalesce(cast(" + cat.NameDb + " as varchar(255)), '') " + cat.NameDb
+			if cat.LinkTableId != 0 {
+				_, table := GetTableLinkById(user, cat.LinkTableId)
+				joinTables += " inner join " + table + " on " + catalog.TableName + "." + cat.NameDb + "=" + table + ".id"
+				field = table + ".name as " + cat.Name
+			} else {
+				field = "coalesce(cast(" + catalog.TableName + "." + cat.NameDb + " as varchar(255)), '') " + cat.NameDb
+			}
+
 			fields = append(fields, field)
 			isList = append(isList, cat.IsList)
 			if !cat.IsIdentity {
@@ -51,7 +67,9 @@ func GetCatalogWorkListById(user *model.User, id int) (err error, result FieldVa
 
 		}
 	}
-	query += strings.Join(fields, ",") + " from " + catalog.TableName + "  for json auto "
+	query += strings.Join(fields, ",") + " from " + catalog.TableName
+	query += joinTables
+	query += "  for json auto "
 	var jsonString string
 	err = db.QueryRow(query).Scan(&jsonString)
 	jsonArr := strings.Split(jsonString, "{")
@@ -85,7 +103,7 @@ func GetCatalogWorkListById(user *model.User, id int) (err error, result FieldVa
 				if nameDb == `"`+fieldId+`"` {
 					valuesId = append(valuesId, val)
 				}
-				dt = append(dt, val)
+				dt = append(dt, val[1:len(val)-1])
 				//	header[strings.ReplaceAll(vl[0], `"`, "")] = true
 
 			}
@@ -117,11 +135,56 @@ func SaveCatalogWork(user *model.User, catalog model.Catalog) (err error, id int
 		if cat.Name != "" && cat.Value != "" {
 			fieldsA = append(fieldsA, cat.NameDb)
 		}
+
 	}
-	var query string
+
+	type DefaultField struct {
+		isUserCreate, isUserModify, isDateCreate, isDateModify bool
+		fieldName                                              string
+	}
+	var (
+		query string
+	)
+	var df []DefaultField
+	//дефолтные поля
+
+	query = `select name_db, is_user_create, is_user_modify, is_date_create, is_date_modify from utills_catalog_fields where catalog_id = ` + strconv.Itoa(catalog.Id)
+	rows, err := db.Query(query)
+	defer rows.Close()
+	for rows.Next() {
+		var f DefaultField
+		err = rows.Scan(&f.fieldName, &f.isUserCreate, &f.isUserModify, &f.isDateCreate, &f.isDateModify)
+		if f.isUserCreate || f.isUserModify || f.isDateCreate || f.isDateModify {
+			df = append(df, f)
+		}
+		//if f.isUserCreate && !df.isUserCreate {
+		//	df.isUserCreate = true
+		//}
+		//if f.isUserModify && !df.isUserModify {
+		//	df.isUserModify = true
+		//}
+		//if f.isDateCreate && !df.isDateCreate {
+		//	df.isDateCreate = true
+		//}
+		//if f.isDateModify && !df.isDateModify {
+		//	df.isDateModify = true
+		//}
+	}
 	if catalog.EntityId == 0 {
+		for _, f := range df {
+			if f.isUserCreate || f.isDateCreate {
+				fieldsA = append(fieldsA, f.fieldName)
+			}
+
+		}
 		query = `insert into ` + catalog.TableName + ` (` + strings.Join(fieldsA, ",") + `) values (`
 	} else {
+		for _, f := range df {
+			if f.isUserModify || f.isDateModify {
+				fieldsA = append(fieldsA, f.fieldName)
+			}
+
+		}
 		query = `update ` + catalog.TableName + ` set `
 	}
 	var vals []string
@@ -129,9 +192,10 @@ func SaveCatalogWork(user *model.User, catalog model.Catalog) (err error, id int
 		if cat.Name != "" && cat.Value != "" {
 			val := cat.Value
 			if cat.NameType == "bit" {
-				fmt.Println(val)
+				//	fmt.Println(val)
 			}
 			if cat.NameType != "int" {
+
 				val = "'" + cat.Value + "'"
 			}
 			if catalog.EntityId != 0 {
@@ -141,6 +205,26 @@ func SaveCatalogWork(user *model.User, catalog model.Catalog) (err error, id int
 
 		}
 		//if cat.NameType != ''
+	}
+	if catalog.EntityId == 0 {
+		for _, f := range df {
+			if f.isUserCreate {
+				vals = append(vals, "original_login()")
+			}
+			if f.isDateCreate {
+				vals = append(vals, "GETDATE()")
+			}
+		}
+	} else {
+		for _, f := range df {
+			if f.isUserModify {
+
+				vals = append(vals, f.fieldName+"= original_login()")
+			}
+			if f.isDateModify {
+				vals = append(vals, f.fieldName+"= GETDATE()")
+			}
+		}
 	}
 	query += strings.Join(vals, ",")
 	if catalog.EntityId != 0 {
@@ -182,20 +266,25 @@ func GetEntityByCatalogId(user *model.User, catalogId, entityId int) (err error,
 	}
 	jsonStr = strings.ReplaceAll(jsonStr, "[{", "")
 	jsonStr = strings.ReplaceAll(jsonStr, "}]", "")
-	jsonStr = strings.ReplaceAll(jsonStr, "\"", "")
+	//jsonStr = strings.ReplaceAll(jsonStr, "\"", "")
 	jsonArr := strings.Split(jsonStr, ",")
 	for _, js := range jsonArr {
 		arr := strings.Split(js, ":")
+		fld := arr[0]
+		fld = fld[1 : len(fld)-1]
 		for idx, field := range catalog.Fields {
 
-			if field.NameDb == arr[0] {
+			if field.NameDb == fld {
 				if field.NameType == "bit" {
-					fmt.Println("")
+
 				}
 				if field.NameType == "bit" && arr[1] == "1" {
 					catalog.Fields[idx].Value = "checked"
 				} else {
-					catalog.Fields[idx].Value = arr[1]
+					val := arr[1]
+					val = val[1 : len(val)-1]
+					val = strings.ReplaceAll(val, "\\", "")
+					catalog.Fields[idx].Value = val
 				}
 			}
 		}

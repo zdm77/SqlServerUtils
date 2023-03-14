@@ -29,14 +29,18 @@
             }
 
             let idsNotNull = []
+            let listListIdent = []
 
             function renderTable() {
 
+                listListIdent = []
                 idsNotNull = []
                 let html = ''
                 let counter = 0
                 for (field of data.fields) {
                     if (field.name) {
+                        field.value = field.value.replaceAll('\\', '')
+
                         html += '<tr>'
                         html += '<td>' + field.name
                         if (!field.is_nullable) {
@@ -53,7 +57,17 @@
                                 html += ' <input class="form-control" style="width:160px"  type="number" '
                                 break
                             case 'int' :
-                                html += ' <input class="form-control" style="width:160px"  type="number" '
+                                if (field.link_table_id) {
+                                    html += ' <select  name="task" class="form-select" '
+                                    listListIdent.push({
+                                        elemId: 'val' + counter,
+                                        linkId: field.link_table_id,
+                                        val: field.value
+                                    })
+                                    //setListComboBox('val'+counter, field.link_table_id)
+                                } else {
+                                    html += ' <input class="form-control" style="width:160px"  type="number" '
+                                }
                                 break
                             case 'bit' :
                                 html += '<div class="form-check form-switch">' +
@@ -66,8 +80,10 @@
                         if (field.name_type === "bit" && field.value === 'checked') {
                             html += ' checked '
                         } else {
-                            html += ' value= "' + field.value + '"'
+
+                            html += " value= '" + field.value + "'"
                         }
+
                         html += ' id="val' + counter + '">'
                         if (field.name_type === 'bit') html += '</div>'
                         html += '</td>'
@@ -77,8 +93,37 @@
                     counter++
                 }
                 table.innerHTML = html
+                setListComboBox()
             }
 
+            function setListComboBox() {
+                for (link of listListIdent) {
+                    fetch('/api/catalog-list-link/?id=' + link.linkId,
+                        {
+                            method: 'POST',
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
+
+
+                        })
+                        .then(response => response.json())
+                        .then((response) => {
+                            if (response.length > 0) {
+                                let htmlD = ''
+                                let selected = 0
+                                response.map(function (item, key) {
+
+                                    if (item.id == link.val) selected = key
+                                    htmlD += '<option value="' + item.id + '">' + item.name + '</option>'
+                                })
+                                let elem = document.getElementById(link.elemId)
+                                elem.innerHTML = htmlD
+                                elem.selectedIndex = selected
+                            }
+                        })
+                }
+            }
 
             function save() {
                 //валидация
@@ -87,7 +132,7 @@
                     if (elem) {
 
                         if (!elem.value) {
-                            if (elem.type!=='checkbox') {
+                            if (elem.type !== 'checkbox') {
                                 alert('Заполните обязательные поля')
                                 return
                             }
@@ -96,9 +141,9 @@
                 }
                 for (let i = 0; i < data.fields.length; i++) {
                     let el = document.getElementById('val' + i)
-                    if (el ) {
+                    if (el) {
 
-                        if (data.fields[i].name_type==="bit") {
+                        if (data.fields[i].name_type === "bit") {
                             data.fields[i].value = el.checked ? '1' : '0';
 
                         } else {
@@ -145,9 +190,9 @@
 
             }
 
-            {{/*console.log({{ .Fields}})*/}}
+
             let id = {{ .Id}}
-                // let fields = {{ .Fields}}
+
                 let
             data = {{ .}}
                 let

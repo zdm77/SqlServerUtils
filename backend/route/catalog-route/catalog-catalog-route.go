@@ -21,19 +21,21 @@ func CatalogListHandler(w http.ResponseWriter, r *http.Request) {
 		"./ui/html/controls/table.tmpl",
 		"./ui/html/controls/list-panel.tmpl",
 	}
-
+	keys := r.URL.Query()
+	typeId := keys.Get("id")
 	tpl, err := template.ParseFiles(files...)
 	if err != nil {
 		log.Println(err.Error())
 	}
 
-	tpl.Execute(w, nil)
+	tpl.Execute(w, typeId)
 }
 func GetCatalogListHandler(w http.ResponseWriter, r *http.Request) {
 	user := session.GetSessionData(r)
 	if user != nil {
-
-		list := db_catalog.GetCatalogList(user)
+		keys := r.URL.Query()
+		typeId := keys.Get("id")
+		list := db_catalog.GetCatalogList(user, typeId)
 		data, _ := json.Marshal(list)
 		w.Write(data)
 	} else {
@@ -41,20 +43,49 @@ func GetCatalogListHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write(data)
 	}
 }
+func GetLinkListHandler(w http.ResponseWriter, r *http.Request) {
+	user := session.GetSessionData(r)
+	if user != nil {
+		keys := r.URL.Query()
+		id, err := strconv.Atoi(keys.Get("id"))
+		err, list := db_catalog.GetLinkList(user, id)
+		var data []byte
+		if err != nil {
+			data, _ = json.Marshal(route.Message{Text: err.Error()})
+		} else {
+			data, _ = json.Marshal(list)
+
+		}
+		w.Write(data)
+	} else {
+		data, _ := json.Marshal(route.Message{Text: "not-login"})
+		w.Write(data)
+	}
+}
 func CatalogCreateHandler(w http.ResponseWriter, r *http.Request) {
+	keys := r.URL.Query()
+	typeId := keys.Get("typeId")
 	files := []string{
 		"./ui/html/catalog/catalog-create.page.tmpl",
 		"./ui/html/base.layout.tmpl",
 		"./ui/html/top.layout.tmpl",
 		"./ui/html/controls/save.tmpl",
 	}
-
+	catalog := model.Catalog{
+		Id:         0,
+		EntityId:   0,
+		Name:       "",
+		TableName:  "",
+		Fields:     nil,
+		TypeEntity: typeId,
+	}
 	tpl, err := template.ParseFiles(files...)
 	if err != nil {
 		log.Println(err.Error())
 	}
 
-	tpl.Execute(w, nil)
+	tpl.Execute(w, catalog)
+	//tpl.Execute(w, nil)
 }
 func CatalogSaveHandler(w http.ResponseWriter, r *http.Request) {
 	user := session.GetSessionData(r)

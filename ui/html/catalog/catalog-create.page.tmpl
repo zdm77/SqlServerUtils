@@ -44,6 +44,8 @@
             }
         </style>
         <script>
+
+
             const name = document.getElementById('name')
             name.addEventListener('keyup', function () {
                 valid()
@@ -162,7 +164,10 @@
                 const fisDateMod =   document.getElementById('isDateMod-' + id)
                 const fisUserCreate =   document.getElementById('isUserCreate-' + id)
                 const fisUserMod =   document.getElementById('isUserMod-' + id)
-                if (fIsDateCreate.checked || fisDateMod.checked || fisUserCreate.checked || fisUserMod.checked) {
+                if ((fIsDateCreate && fIsDateCreate.checked)
+                    || (fisDateMod && fisDateMod.checked)
+                    || (fisUserCreate && fisUserCreate.checked)
+                    || (fisUserMod && fisUserMod.checked)) {
                     fIsForm.disabled = true
                     fIsForm.checked = false
                 } else {
@@ -474,9 +479,10 @@
                             "Content-Type": "application/json"
                         },
                         body: JSON.stringify({
-                            id: id ? id : 0,
+                            id: id!==0 ? id : 0,
                             name: name.value,
                             table_name: tableDb.value,
+                            type_entity: typeEntity
 
                         })
                     })
@@ -492,7 +498,7 @@
                                 for (field of fields) {
 
                                     if (!field.is_nullable_db && field.name === '' && !field.is_identity) {
-                                        console.log(field)
+
                                         alert('Введите наименование для обязательных полей')
                                         return
                                     }
@@ -532,6 +538,9 @@
 
             {{/*console.log({{ .Fields}})*/}}
             let id = {{ .Id}}
+            let typeEntity = {{ .TypeEntity}}
+
+
         </script>
     </main>
 {{end}}
