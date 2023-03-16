@@ -52,7 +52,9 @@
                                                 class="btn btn-primary bi bi-save" onclick="saveAccess()">
                                             <span style="margin-left: 3px">Сохранить</span>
                                         </button>
-                                        <button id="back" style="margin-left: 15px;font-size:14px;" class="btn bi bi-skip-backward  bg-success text-light" onclick="history.back(); ">
+                                        <button id="back" style="margin-left: 15px;font-size:14px;"
+                                                class="btn bi bi-skip-backward  bg-success text-light"
+                                                onclick="history.back(); ">
                                             <span style="margin-left: 3px">Назад</span>
                                         </button>
                                     </div>
@@ -83,11 +85,12 @@
             let idsNotNull = []
             let listListIdent = []
             let access = []
+
             function saveAccess() {
 
                 let users = []
                 for (a of access) {
-                    let el = document.getElementById('access-'+a)
+                    let el = document.getElementById('access-' + a)
                     if (el.checked) {
                         users.push(a)
                     }
@@ -107,7 +110,7 @@
                     })
                     .then(response => response.json())
                     .then((response) => {
-                       alert('Доступ сохранен')
+                        alert('Доступ сохранен')
                     })
             }
 
@@ -145,7 +148,7 @@
                                 html += '</td>'
                                 html += '<td>'
                                 html += '<div class="form-check form-switch">' +
-                                    '<input  class="form-check-input mx-auto" style="font-size: 24px" type="checkbox" id=access-'+item.user_name
+                                    '<input  class="form-check-input mx-auto" style="font-size: 24px" type="checkbox" id=access-' + item.user_name
                                 access.push(item.user_name)
                                 if (item.access) {
                                     html += ' checked '
@@ -161,7 +164,7 @@
             }
 
             function renderTable() {
-
+                console.log(data.fields)
                 listListIdent = []
                 idsNotNull = []
                 let html = ''
@@ -227,6 +230,8 @@
 
             function setListComboBox() {
                 for (link of listListIdent) {
+                    let linkElemId = link.elemId
+                    let lingVal = link.val
                     fetch('/api/catalog-list-link/?id=' + link.linkId,
                         {
                             method: 'POST',
@@ -238,15 +243,23 @@
                         })
                         .then(response => response.json())
                         .then((response) => {
+
                             if (response.length > 0) {
+
                                 let htmlD = ''
                                 let selected = 0
                                 response.map(function (item, key) {
 
-                                    if (item.id == link.val) selected = key
+                                    if (item.id == lingVal) {
+
+                                        selected = key
+
+                                    }
                                     htmlD += '<option value="' + item.id + '">' + item.name + '</option>'
                                 })
-                                let elem = document.getElementById(link.elemId)
+
+                                let elem = document.getElementById(linkElemId)
+
                                 elem.innerHTML = htmlD
                                 elem.selectedIndex = selected
                             }
@@ -283,6 +296,7 @@
                     }
 
                 }
+
 
                 data.entity_id = entityId;
 

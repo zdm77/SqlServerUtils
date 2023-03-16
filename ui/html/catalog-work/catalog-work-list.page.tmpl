@@ -8,8 +8,9 @@
             {{template "list-panel"}}
         </div>
         <script>
+
             function create() {
-                document.location = '/catalog-work-create/?id=' + id
+                document.location = '/catalog-work-create/?id=' + catalogId
             }
 
             function refresh() {
@@ -125,6 +126,7 @@
             }
 
             let id = {{ .}}
+            let catalogId = id
                 renderTable()
         </script>
     </main>

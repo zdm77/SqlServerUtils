@@ -116,7 +116,7 @@ func GetCatalogWorkListById(user *model.User, id int) (err error, result FieldVa
 		if cat.IsIdentity || cat.Name != "" || !cat.IsNullable || !cat.IsNullableDb {
 			if cat.LinkTableId != 0 {
 				_, table := GetTableLinkById(user, cat.LinkTableId)
-				joinTables += " inner join " + table + " on " + catalog.TableName + "." + cat.NameDb + "=" + table + ".id"
+				joinTables += " left join " + table + " on " + catalog.TableName + "." + cat.NameDb + "=" + table + ".id"
 				field = "coalesce(cast(" + table + ".name as varchar(255)), '') " + cat.Name
 			} else {
 				field = "coalesce(cast(" + catalog.TableName + "." + cat.NameDb + " as varchar(255)), '') " + cat.NameDb
