@@ -36,6 +36,7 @@ type Field struct {
 	IsForeignField bool   `json:"is_foreign_field"`
 }
 type LinkTable struct {
-	Id   int    `json:"id"`
-	Name string `json:"name"`
+	Id     int    `json:"id"`
+	Name   string `json:"name"`
+	Access string `json:"access"`
 }

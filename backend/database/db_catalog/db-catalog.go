@@ -6,6 +6,7 @@ import (
 	"sqlutils/backend/database"
 	"sqlutils/backend/model"
 	"strconv"
+	"strings"
 )
 
 func GetDbTableFields(user *model.User, tableName string, forIsNew bool) (fields []model.Field, err error) {
@@ -327,20 +328,49 @@ func DeleteCatalogList(user *model.User, id int) (err error) {
 
 	return err
 }
-func GetLinkList(user *model.User, id int) (err error, data []model.LinkTable) {
+func GetLinkList(user *model.User, id int, fieldLink, catalogIdFrom string) (err error, data []model.LinkTable) {
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
 	//получаем таблицу по айди
 	query := `select  table_name from  utils_catalog_list where id = ` + strconv.Itoa(id)
 	var tableName string
 	err = db.QueryRow(query).Scan(&tableName)
-	query = `select id, name from ` + tableName + ` order by id`
+
+	//доступ
+
+	isAccess := false
+	//if user.Login != user.SuperAdmin {
+	query = `select  is_access_check from utills_catalog_fields where catalog_id = ` + catalogIdFrom + ` and name_db = '` + fieldLink + `' `
+	err = db.QueryRow(query).Scan(&isAccess)
+	query = `select id, name `
+	//}
+
+	if isAccess {
+		query += ` ,access `
+	}
+	query += ` from ` + tableName + ` order by id`
 	rows, err := db.Query(query)
+
 	defer rows.Close()
 	for rows.Next() {
 		var d model.LinkTable
-		err = rows.Scan(&d.Id, &d.Name)
-		data = append(data, d)
+		if isAccess {
+			err = rows.Scan(&d.Id, &d.Name, &d.Access)
+		} else {
+			err = rows.Scan(&d.Id, &d.Name)
+		}
+		if isAccess {
+			arr := strings.Split(d.Access, ",")
+			for _, a := range arr {
+				if a == user.Login {
+					data = append(data, d)
+					break
+				}
+			}
+		} else {
+			data = append(data, d)
+		}
+
 	}
 	return err, data
 }

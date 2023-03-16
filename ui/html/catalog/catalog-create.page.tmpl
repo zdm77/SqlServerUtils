@@ -13,11 +13,11 @@
                         <div class="row">
                             <div class="col-3">
                                 <label for="name" class="form-label">Наименование</label>
-                                <input class="form-control" id="name" value={{ .Name}}>
+                                <input autocomplete="off" class="form-control" id="name" value={{ .Name}}>
                             </div>
                             <div class="col-3">
                                 <label for="table_db" class="form-label">Таблица БД</label>
-                                <input class="form-control" id="table_name" value={{ .TableName}}>
+                                <input autocomplete="off" class="form-control" id="table_name" value={{ .TableName}}>
                             </div>
                         </div>
                     </li>
@@ -33,6 +33,10 @@
                         <button type="button" class="btn btn-primary bi bi-plus-circle" data-bs-toggle="modal"
                                 data-bs-target="#modalField">
                             Создать
+                        </button>
+                        <button id="back" style="margin-left: 15px;font-size:14px;"
+                                class="btn bi bi-skip-backward  bg-success text-light" onclick="document.location='/catalog-list/?id='+typeEntity ">
+                            <span style="margin-left: 3px">Назад</span>
                         </button>
                         <!-- Modal -->
                         <div class="modal fade" id="modalField" tabindex="-1" aria-labelledby="modalFieldLabel"
@@ -75,10 +79,7 @@
                                 </div>
                             </div>
                         </div>
-                        <button id="back" style="margin-left: 15px;font-size:14px;"
-                                class="btn bi bi-skip-backward  bg-success text-light" onclick="history.back(); ">
-                            <span style="margin-left: 3px">Назад</span>
-                        </button>
+
                     </div>
                 </li>
                 <li class="list-group-item">
@@ -161,21 +162,22 @@
                                 is_nullable: true,
                                 is_nullable_db: true,
                             })
-                            fetch('/api/save-db-fields',
-                                {
-                                    method: 'POST',
-                                    headers: {
-                                        "Content-Type": "application/json"
-                                    },
-                                    body: JSON.stringify(fields)
-                                })
-                                .then(response => response.json())
-                                .then((response) => {
-
-                                    window.location.reload();
-
-
-                                })
+                            save(true)
+                            // fetch('/api/save-db-fields',
+                            //     {
+                            //         method: 'POST',
+                            //         headers: {
+                            //             "Content-Type": "application/json"
+                            //         },
+                            //         body: JSON.stringify(fields)
+                            //     })
+                            //     .then(response => response.json())
+                            //     .then((response) => {
+                            //
+                            //         window.location.reload();
+                            //
+                            //
+                            //     })
                             //getFieldsByCatalogId(nameField.value, typeField.value)
                         } else {
                             alert(response)
@@ -200,6 +202,7 @@
             // }
             function setValuesFields() {
                 for (let i = 0; i < fields.length; i++) {
+                    fields[i].catalog_id = id
                     let elem = document.getElementById('valName' + i)
                     if (elem) {
                         fields[i].name = elem.value
@@ -210,13 +213,13 @@
                     }
                     elem = document.getElementById('isList' + i)
                     // if (elem) {
-                    if (elem.checked) {
+                    if (elem && elem.checked) {
                         fields[i].is_list = true
                     } else {
                         fields[i].is_list = false
                     }
                     elem = document.getElementById('isForm' + i)
-                    if (elem.checked) {
+                    if (elem && elem.checked) {
                         fields[i].is_form = true
                     } else {
                         fields[i].is_form = false
@@ -258,7 +261,7 @@
 
                     //проверяет доступ
                     elem = document.getElementById('isAccess' + i)
-                    if (elem.checked) {
+                    if (elem && elem.checked) {
                         fields[i].is_access_check = true
                     } else {
                         fields[i].is_access_check = false
@@ -619,7 +622,7 @@
                     })
             }
 
-            function save() {
+            function save(isNewField) {
 
                 // return
                 fetch('/api/catalog-save',
@@ -643,6 +646,7 @@
 
                         if (txtArr[0] === "ok") {
                             if (!id) {
+
                                 id = Number(txtArr[1])
                                 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!/////
                                 getFields()
@@ -654,6 +658,7 @@
                                         return
                                     }
                                 }
+                                document.location = '/catalog-edit/?id=' + id
                             } else {
                                 setValuesFields()
                                 for (field of fields) {
@@ -675,7 +680,9 @@
                                     })
                                     .then(response => response.json())
                                     .then((response) => {
-                                        alert('Данные сохранены')
+                                        window.location.reload();
+                                        if (!isNewField)
+                                            alert('Данные сохранены')
                                     })
                             }
 

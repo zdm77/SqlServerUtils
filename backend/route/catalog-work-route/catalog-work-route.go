@@ -51,7 +51,8 @@ func CatalogGetWorkListHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Println(err.Error())
 		}
-		_, list := db_catalog_work.GetCatalogWorkListById(user, id.Id)
+		//_, list := db_catalog_work.GetCatalogWorkListById(user, id.Id, true)
+		_, list := db_catalog_work.GetCatalogWorkListByIdJson(user, id.Id, true)
 		data, _ := json.Marshal(list)
 		w.Write(data)
 	} else {

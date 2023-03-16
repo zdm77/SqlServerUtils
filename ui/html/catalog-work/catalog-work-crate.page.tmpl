@@ -194,7 +194,8 @@
                                     listListIdent.push({
                                         elemId: 'val' + counter,
                                         linkId: field.link_table_id,
-                                        val: field.value
+                                        val: field.value,
+                                        fieldNameLink: field.name_db,
                                     })
                                     //setListComboBox('val'+counter, field.link_table_id)
                                 } else {
@@ -230,9 +231,10 @@
 
             function setListComboBox() {
                 for (link of listListIdent) {
+                    console.log(link)
                     let linkElemId = link.elemId
                     let lingVal = link.val
-                    fetch('/api/catalog-list-link/?id=' + link.linkId,
+                    fetch('/api/catalog-list-link/?id=' + link.linkId+'&field='+link.fieldNameLink+'&catalogId='+id,
                         {
                             method: 'POST',
                             headers: {

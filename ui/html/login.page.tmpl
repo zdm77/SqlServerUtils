@@ -36,11 +36,11 @@
     <form method="POST" action="/main">
         {{ .}}
         <div class="form-floating">
-            <input type="login" name="login" class="form-control" id="floatingInput" placeholder="Login">
+            <input type="login" name="login" class="form-control" id="floatingInput" placeholder="Login" autocomplete="off">
             <label for="floatingInput">Login</label>
         </div>
         <div class="form-floating">
-            <input type="password" class="form-control" name="passwd" id="floatingPassword" placeholder="Password">
+            <input type="password" class="form-control" name="passwd" id="floatingPassword" placeholder="Password" >
             <label for="floatingPassword">Пароль</label>
         </div>
         <button class="w-100 btn btn-lg btn-primary" type="submit">Войти</button>

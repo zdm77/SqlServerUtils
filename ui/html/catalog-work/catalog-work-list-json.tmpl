@@ -8,6 +8,7 @@
             {{template "list-panel"}}
         </div>
         <script>
+
             function create() {
                 document.location = '/catalog-work-create/?id=' + catalogId
             }
@@ -15,28 +16,7 @@
             function refresh() {
                 renderTable()
             }
-            let arrFind = []
 
-            function find(el) {
-                arrFind = []
-                for (let i = 1; i <= 3; i++) {
-
-                    let el = $('#qqq' + i)
-                    if (el.val()) {
-                        arrFind.push({
-                            id: i - 1,
-                            type: el.attr('type'),
-                            val: el.val(),
-                        })
-                    }
-
-                }
-                //  if (arrFind.length > 0) {
-                let table = $('#json_data').DataTable();
-                table.draw();
-                //}
-
-            }
 
             function renderTable() {
                 let table = document.getElementById("json_data");
@@ -59,25 +39,21 @@
                     .then((response) => {
                         if (response.text != 'not-login') {
                             console.log(response)
-                            const obj = JSON.parse(response.json);
-                           
                             document.getElementById('cardHeader').innerText = response.name_catalog
                             id = response.catalog_id
                             const fieldId = response.field_id
                             let fieldIdIdx = -1
-                            html += '<thead>'
+
                             for (let i = 0; i < response.headers.length; i++) {
                                 const val = response.headers[i]
                                 if (val === fieldId) {
                                     fieldIdIdx = i
-                                } else {
+                                } else  {
                                     if (response.is_list[i])
                                         html += '<th>' + val + '</th> '
                                 }
                             }
-                            html+='<th></th>'
 
-                            html += '</thead>'
                             let vals = response.vals
 
                             for (let i = 0; i < vals.length; i++) {
@@ -121,54 +97,10 @@
                             }
                         }
                         table.innerHTML = html
-                        $('#json_data').DataTable({
-                            sPaging: false,
-                            pagingType: "simple",
-                            "bLengthChange": false,
-                            "processing": true,
-                            'sDom': 't',
-                        })
-                        $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
-                            if (arrFind.length === 0) return true
-                            let isOk = false
-                            for (const item of arrFind) {
-
-                                switch (item.type) {
-                                    case 'text': {
-                                        if (data[item.id].toUpperCase().startsWith(item.val.toUpperCase())) {
-                                            isOk = true
-                                        } else {
-                                            return false
-                                        }
-                                        break
-                                    }
-                                    case 'date': {
-                                        let val = new Date(item.val).toLocaleDateString();
-                                        if (val == data[item.id]) {
-                                            isOk = true
-                                        } else {
-                                            return false
-                                        }
-                                        break
-                                    }
-                                    default : {
-                                        if (item.val == data[item.id]) {
-                                            isOk = true
-                                        } else {
-                                            return false
-                                        }
-                                    }
-                                }
-
-                            }
-                            return isOk
-
-                        });
                     })
 
 
             }
-
 
 
             function deleteTask(id, catalogId) {
@@ -194,8 +126,7 @@
             }
 
             let id = {{ .}}
-                let
-            catalogId = id
+                let catalogId = id
             renderTable()
         </script>
     </main>

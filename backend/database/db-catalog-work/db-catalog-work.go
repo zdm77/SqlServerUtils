@@ -18,6 +18,8 @@ type FieldVals struct {
 	Vals        [][]string `json:"vals"`
 	ValuesId    []string   `json:"values_id"`
 	IsList      []bool     `json:"is_list"`
+	Data        [][]string `json:"data"`
+	Json        string     `json:"json"`
 }
 
 func GetTableLinkById(user *model.User, id int) (err error, table string) {
@@ -27,7 +29,129 @@ func GetTableLinkById(user *model.User, id int) (err error, table string) {
 	err = db.QueryRow(query).Scan(&table)
 	return err, table
 }
-func GetCatalogWorkListById(user *model.User, id int) (err error, result FieldVals) {
+
+func GetCatalogWorkListByIdJson(user *model.User, id int, isJSONParse bool) (err error, result FieldVals) {
+
+	db, _ := database.GetDb(user.ConnString)
+	defer db.Close()
+
+	catalog := db_catalog.GetCatalogById(user, id, false)
+	var data [][]string
+	var headers []string
+	var isList []bool
+	query := `select `
+	var fields []string
+	var fieldId string
+	var valuesId []string
+	var joinTables string
+	type Access struct {
+		id    string
+		user  []string
+		users string
+	}
+	isAccessInTable := false
+	var whereAccess []string
+	if user.SuperAdmin != user.Login {
+		//ищем списки для проверки прав
+		for _, cat := range catalog.Fields {
+			if cat.LinkTableId != 0 && cat.IsAccessCheck {
+				_, tableLink := GetTableLinkById(user, cat.LinkTableId)
+
+				var ids []string
+				queryAcc := `select id, access from ` + tableLink
+				rows, err := db.Query(queryAcc)
+				if err == nil {
+					isAccessInTable = true
+					defer rows.Close()
+					for rows.Next() {
+
+						var a string
+						var wId string
+						err = rows.Scan(&wId, &a)
+						arr := strings.Split(a, ",")
+						for _, a1 := range arr {
+							a1 = strings.TrimSpace(a1)
+							if a1 == user.Login {
+								ids = append(ids, wId)
+							}
+						}
+
+					}
+					if len(ids) > 0 {
+						wh := " and " + tableLink + ".id in (" + strings.Join(ids, ",") + ")"
+						whereAccess = append(whereAccess, wh)
+					}
+
+				}
+			}
+		}
+
+	}
+	for _, cat := range catalog.Fields {
+
+		var field string
+		if cat.IsPrimaryKey {
+			fieldId = cat.NameDb
+		}
+		if cat.IsIdentity || cat.Name != "" || !cat.IsNullable || !cat.IsNullableDb {
+			if cat.LinkTableId != 0 {
+				_, table := GetTableLinkById(user, cat.LinkTableId)
+				joinTables += " left join " + table + " on " + catalog.TableName + "." + cat.NameDb + "=" + table + ".id"
+				field = "coalesce(cast(" + table + ".name as varchar(255)), '') " + cat.Name
+			} else {
+				field = "coalesce(cast(" + catalog.TableName + "." + cat.NameDb + " as varchar(255)), '') " + cat.NameDb
+			}
+
+			fields = append(fields, field)
+			isList = append(isList, cat.IsList)
+			if !cat.IsIdentity {
+				headers = append(headers, cat.Name)
+			} else {
+				headers = append(headers, cat.NameDb)
+			}
+
+		}
+	}
+	query += strings.Join(fields, ",") + " from " + catalog.TableName
+	query += joinTables
+	if user.SuperAdmin != user.Login {
+		if isAccessInTable {
+			if len(whereAccess) == 0 {
+				return err, result
+			}
+			query += " where 1=1 "
+			for _, data := range whereAccess {
+				query += data
+			}
+			//query += ` where ` + catalog.TableName + `.id in (` + strings.Join(ids, ",") + `) `
+		}
+	}
+	var jsonString string
+	if isJSONParse {
+		query += "  for json auto "
+
+		err = db.QueryRow(query).Scan(&jsonString)
+		if err != nil {
+			log.Println(err.Error())
+			return err, result
+		}
+	}
+	result = FieldVals{
+		CatalogId:   id,
+		FieldId:     fieldId,
+		NameCatalog: catalog.Name,
+		Headers:     headers,
+		Fields:      fields,
+		Vals:        data,
+		ValuesId:    valuesId,
+		IsList:      isList,
+		Data:        data,
+		Json:        jsonString,
+	}
+	return err, result
+}
+
+func GetCatalogWorkListById(user *model.User, id int, isJSONParse bool) (err error, result FieldVals) {
 
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
@@ -146,51 +270,46 @@ func GetCatalogWorkListById(user *model.User, id int) (err error, result FieldVa
 			//query += ` where ` + catalog.TableName + `.id in (` + strings.Join(ids, ",") + `) `
 		}
 	}
-	query += "  for json auto "
 	var jsonString string
-	err = db.QueryRow(query).Scan(&jsonString)
-	if err != nil {
-		log.Println(err.Error())
-		return err, result
-	}
-	jsonArr := strings.Split(jsonString, "{")
-	//header := make(map[string]bool)
-	for idx, js := range jsonArr {
-		if idx != 0 {
-			str := strings.ReplaceAll(js, "},", "")
-			arr := strings.Split(str, ",")
-			var dt []string
-			for _, a := range arr {
-				vl := strings.Split(a, ":")
-				nameDb := vl[0]
+	if isJSONParse {
+		query += "  for json auto "
 
-				val := strings.ReplaceAll(vl[1], `}]`, "")
-				for _, f := range catalog.Fields {
-					if f.NameDb == strings.ReplaceAll(nameDb, "\"", "") && f.NameType == "bit" {
-						if val == `"1"` {
-							val = "checked"
-						} else {
-							val = "unchecked"
+		err = db.QueryRow(query).Scan(&jsonString)
+		if err != nil {
+			log.Println(err.Error())
+			return err, result
+		}
+		jsonArr := strings.Split(jsonString, "{")
+		//header := make(map[string]bool)
+		for idx, js := range jsonArr {
+			if idx != 0 {
+				str := strings.ReplaceAll(js, "},", "")
+				arr := strings.Split(str, ",")
+				var dt []string
+				for _, a := range arr {
+					vl := strings.Split(a, ":")
+					nameDb := vl[0]
+
+					val := strings.ReplaceAll(vl[1], `}]`, "")
+					for _, f := range catalog.Fields {
+						if f.NameDb == strings.ReplaceAll(nameDb, "\"", "") && f.NameType == "bit" {
+							if val == `"1"` {
+								val = "checked"
+							} else {
+								val = "unchecked"
+							}
 						}
 					}
-				}
-				//if catalog.Fields[idxa].NameType == "bit" {
-				//	if val == `"1"` {
-				//		val = "checked"
-				//	} else {
-				//		val = "unchecked"
-				//	}
-				//}
-				if nameDb == `"`+fieldId+`"` {
-					valuesId = append(valuesId, val)
-				}
-				dt = append(dt, val[1:len(val)-1])
-				//	header[strings.ReplaceAll(vl[0], `"`, "")] = true
+					if nameDb == `"`+fieldId+`"` {
+						valuesId = append(valuesId, val)
+					}
+					dt = append(dt, val[1:len(val)-1])
 
+				}
+				data = append(data, dt)
 			}
-			data = append(data, dt)
-		}
 
+		}
 	}
 	//for key, _ := range header {
 	//	headers = append(headers, key)
@@ -205,6 +324,8 @@ func GetCatalogWorkListById(user *model.User, id int) (err error, result FieldVa
 		Vals:        data,
 		ValuesId:    valuesId,
 		IsList:      isList,
+		Data:        data,
+		Json:        jsonString,
 	}
 	return err, result
 }

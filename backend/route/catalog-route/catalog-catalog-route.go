@@ -48,7 +48,9 @@ func GetLinkListHandler(w http.ResponseWriter, r *http.Request) {
 	if user != nil {
 		keys := r.URL.Query()
 		id, err := strconv.Atoi(keys.Get("id"))
-		err, list := db_catalog.GetLinkList(user, id)
+		fieldLink := keys.Get("field")
+		catalogIdFrom := keys.Get("catalogId")
+		err, list := db_catalog.GetLinkList(user, id, fieldLink, catalogIdFrom)
 		var data []byte
 		if err != nil {
 			data, _ = json.Marshal(route.Message{Text: err.Error()})
