@@ -42,29 +42,70 @@ func GetCatalogWorkListById(user *model.User, id int) (err error, result FieldVa
 	var valuesId []string
 	//var catalogRes model.Catalog
 	var joinTables string
-	queryAccess := `select id, access from ` + catalog.TableName
+	//queryAccess := `select id, access from ` + catalog.TableName
 	type Access struct {
 		id    string
 		user  []string
 		users string
 	}
 	//var access []Access
-	var ids []string
-	rows, err := db.Query(queryAccess)
+	//var ids []string
 	isAccessInTable := false
-	if err == nil {
-		isAccessInTable = true
-		for rows.Next() {
-			var a Access
-			rows.Scan(&a.id, &a.users)
-			users := strings.Split(a.users, ",")
-			for _, u := range users {
-				u = strings.TrimSpace(u)
-				if u == user.Login {
-					ids = append(ids, a.id)
+	//if user.SuperAdmin != user.Login {
+	//	rows, err := db.Query(queryAccess)
+	//
+	//	if err == nil {
+	//		isAccessInTable = true
+	//		for rows.Next() {
+	//			var a Access
+	//			rows.Scan(&a.id, &a.users)
+	//			users := strings.Split(a.users, ",")
+	//			for _, u := range users {
+	//				u = strings.TrimSpace(u)
+	//				if u == user.Login {
+	//					ids = append(ids, a.id)
+	//				}
+	//			}
+	//		}
+	//	}
+	//}
+	var whereAccess []string
+	if user.SuperAdmin != user.Login {
+		//ищем списки для проверки прав
+		for _, cat := range catalog.Fields {
+			if cat.LinkTableId != 0 && cat.IsAccessCheck {
+				_, tableLink := GetTableLinkById(user, cat.LinkTableId)
+
+				var ids []string
+				queryAcc := `select id, access from ` + tableLink
+				rows, err := db.Query(queryAcc)
+				if err == nil {
+					isAccessInTable = true
+					defer rows.Close()
+					for rows.Next() {
+
+						var a string
+						var wId string
+						err = rows.Scan(&wId, &a)
+						arr := strings.Split(a, ",")
+						for _, a1 := range arr {
+							a1 = strings.TrimSpace(a1)
+							if a1 == user.Login {
+								ids = append(ids, wId)
+							}
+						}
+
+					}
+
+					if len(ids) > 0 {
+						wh := " and " + tableLink + ".id in (" + strings.Join(ids, ",") + ")"
+						whereAccess = append(whereAccess, wh)
+					}
+
 				}
 			}
 		}
+
 	}
 	for _, cat := range catalog.Fields {
 
@@ -76,7 +117,7 @@ func GetCatalogWorkListById(user *model.User, id int) (err error, result FieldVa
 			if cat.LinkTableId != 0 {
 				_, table := GetTableLinkById(user, cat.LinkTableId)
 				joinTables += " inner join " + table + " on " + catalog.TableName + "." + cat.NameDb + "=" + table + ".id"
-				field = table + ".name as " + cat.Name
+				field = "coalesce(cast(" + table + ".name as varchar(255)), '') " + cat.Name
 			} else {
 				field = "coalesce(cast(" + catalog.TableName + "." + cat.NameDb + " as varchar(255)), '') " + cat.NameDb
 			}
@@ -93,12 +134,25 @@ func GetCatalogWorkListById(user *model.User, id int) (err error, result FieldVa
 	}
 	query += strings.Join(fields, ",") + " from " + catalog.TableName
 	query += joinTables
-	if isAccessInTable {
-		query += ` where ` + catalog.TableName + `.id in (` + strings.Join(ids, ",") + `) `
+	if user.SuperAdmin != user.Login {
+		if isAccessInTable {
+			if len(whereAccess) == 0 {
+				return err, result
+			}
+			query += " where 1=1 "
+			for _, data := range whereAccess {
+				query += data
+			}
+			//query += ` where ` + catalog.TableName + `.id in (` + strings.Join(ids, ",") + `) `
+		}
 	}
 	query += "  for json auto "
 	var jsonString string
 	err = db.QueryRow(query).Scan(&jsonString)
+	if err != nil {
+		log.Println(err.Error())
+		return err, result
+	}
 	jsonArr := strings.Split(jsonString, "{")
 	//header := make(map[string]bool)
 	for idx, js := range jsonArr {
@@ -174,7 +228,13 @@ func SaveCatalogWork(user *model.User, catalog model.Catalog) (err error, id int
 	)
 	var df []DefaultField
 	//дефолтные поля
-
+	queryAccess := `select access from ` + catalog.TableName
+	isAccessTable := false
+	var acc string
+	err = db.QueryRow(queryAccess).Scan(&acc)
+	if err == nil {
+		isAccessTable = true
+	}
 	query = `select name_db, is_user_create, is_user_modify, is_date_create, is_date_modify from utills_catalog_fields where catalog_id = ` + strconv.Itoa(catalog.Id)
 	rows, err := db.Query(query)
 	defer rows.Close()
@@ -203,6 +263,9 @@ func SaveCatalogWork(user *model.User, catalog model.Catalog) (err error, id int
 				fieldsA = append(fieldsA, f.fieldName)
 			}
 
+		}
+		if isAccessTable {
+			fieldsA = append(fieldsA, "access")
 		}
 		query = `insert into ` + catalog.TableName + ` (` + strings.Join(fieldsA, ",") + `) values (`
 	} else {
@@ -252,6 +315,9 @@ func SaveCatalogWork(user *model.User, catalog model.Catalog) (err error, id int
 				vals = append(vals, f.fieldName+"= GETDATE()")
 			}
 		}
+	}
+	if isAccessTable {
+		vals = append(vals, "'"+user.Login+"'")
 	}
 	query += strings.Join(vals, ",")
 	if catalog.EntityId != 0 {
@@ -339,7 +405,7 @@ func GetCatalogAccessRecord(user *model.User, id int, table string) (err error, 
 	var usersInTableStr string
 	err = db.QueryRow(query).Scan(&usersInTableStr)
 	usersInTable := strings.Split(usersInTableStr, ",")
-	query = `select name from master.sys.server_principals where type_desc ='SQL_LOGIN'  and is_disabled=0`
+	query = `select name from master.sys.server_principals where type_desc ='SQL_LOGIN'  and is_disabled=0 order by name`
 	rows, err := db.Query(query)
 	if err != nil {
 		log.Println(err.Error())
@@ -369,4 +435,15 @@ func GetCatalogAccessRecord(user *model.User, id int, table string) (err error, 
 	}
 
 	return err, result
+}
+
+func SaveCatalogAccessRecord(user *model.User, id int, table, access string) (err error) {
+	db, _ := database.GetDb(user.ConnString)
+	defer db.Close()
+	query := `update ` + table + ` set access = '` + access + `'  where id = ` + strconv.Itoa(id)
+	_, err = db.Exec(query)
+	if err != nil {
+		log.Println(err.Error())
+	}
+	return err
 }

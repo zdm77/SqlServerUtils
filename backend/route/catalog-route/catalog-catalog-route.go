@@ -153,7 +153,20 @@ func GetDbFieldsHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write(data)
 	}
 }
+func GetCatalogFieldsHandler(w http.ResponseWriter, r *http.Request) {
+	user := session.GetSessionData(r)
+	if user != nil {
+		keys := r.URL.Query()
+		id, _ := strconv.Atoi(keys.Get("id"))
+		list := db_catalog.GetCatalogById(user, id, false)
+		data, _ := json.Marshal(list)
+		w.Write(data)
 
+	} else {
+		data, _ := json.Marshal(route.Message{Text: "not-login"})
+		w.Write(data)
+	}
+}
 func SaveDbFieldsHandler(w http.ResponseWriter, r *http.Request) {
 	user := session.GetSessionData(r)
 	if user != nil {
@@ -187,6 +200,26 @@ func CatalogListDeleteListHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			data, _ = json.Marshal(route.Message{Text: "ok"})
 		}
+		w.Write(data)
+	} else {
+		data, _ := json.Marshal(route.Message{Text: "not-login"})
+		w.Write(data)
+	}
+}
+func CreateDbFieldHandler(w http.ResponseWriter, r *http.Request) {
+	user := session.GetSessionData(r)
+	if user != nil {
+
+		decoder := json.NewDecoder(r.Body)
+		var param model.Field
+		err := decoder.Decode(&param)
+
+		err = db_catalog.CreateDbField(user, param)
+		data, _ := json.Marshal("ok")
+		if err != nil {
+			data, _ = json.Marshal(err.Error())
+		}
+
 		w.Write(data)
 	} else {
 		data, _ := json.Marshal(route.Message{Text: "not-login"})

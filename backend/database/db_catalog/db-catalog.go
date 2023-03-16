@@ -151,7 +151,8 @@ func GetCatalogById(user *model.User, id int, forForm bool) (r model.Catalog) {
 	fieldsDb, err := GetDbTableFields(user, r.TableName, false)
 	//табличная часть
 	query = `select id, name, catalog_id, name_db, name_type, max_length, precision, scale, is_nullable, is_identity, 
-       is_primary_key, is_nullable_db, is_list, is_form, link_table_id, is_user_create, is_user_modify, is_date_create, is_date_modify 
+       is_primary_key, is_nullable_db, is_list, is_form, link_table_id, is_user_create, is_user_modify, is_date_create, 
+    is_date_modify, is_access_check , is_foreign_field
 			from utills_catalog_fields where catalog_id=` + strconv.Itoa(id)
 	if forForm {
 		query += ` and is_form=1 `
@@ -163,7 +164,7 @@ func GetCatalogById(user *model.User, id int, forForm bool) (r model.Catalog) {
 		var f model.Field
 		err = rows.Scan(&f.Id, &f.Name, &f.CatalogId, &f.NameDb, &f.NameType, &f.MaxLength, &f.Precision, &f.Scale,
 			&f.IsNullable, &f.IsIdentity, &f.IsPrimaryKey, &f.IsNullableDb, &f.IsList, &f.IsForm, &f.LinkTableId,
-			&f.IsUserCreate, &f.IsUserModify, &f.IsDateCreate, &f.IsDateModify)
+			&f.IsUserCreate, &f.IsUserModify, &f.IsDateCreate, &f.IsDateModify, &f.IsAccessCheck, &f.IsForeignField)
 
 		name := f.Name
 		isNullDb := f.IsNullableDb
@@ -177,6 +178,8 @@ func GetCatalogById(user *model.User, id int, forForm bool) (r model.Catalog) {
 		isUserModify := f.IsUserModify
 		isDateCreate := f.IsDateCreate
 		isDateModify := f.IsDateModify
+		isAccessCheck := f.IsAccessCheck
+		isForeignField := f.IsForeignField
 		for _, field := range fieldsDb {
 			if field.NameDb == f.NameDb {
 				f = field
@@ -194,6 +197,8 @@ func GetCatalogById(user *model.User, id int, forForm bool) (r model.Catalog) {
 				f.IsUserModify = isUserModify
 				f.IsDateCreate = isDateCreate
 				f.IsDateModify = isDateModify
+				f.IsAccessCheck = isAccessCheck
+				f.IsForeignField = isForeignField
 
 			}
 		}
@@ -252,30 +257,35 @@ func SaveCatalogFields(user *model.User, fields []model.Field) (err error) {
 	db, _ := database.GetDb(user.ConnString)
 	//tx, _ := db.Begin()
 	defer db.Close()
-	var query string
+	var query, queryIns, queryUpd string
 	var catalogId = fields[0].CatalogId
 	var isNew int
 	query = `select count(id) from utills_catalog_fields where catalog_id=` + strconv.Itoa(catalogId)
 	err = db.QueryRow(query).Scan(&isNew)
-	if isNew == 0 {
-		query = `insert into utills_catalog_fields (name, catalog_id, name_db, name_type, max_length, precision, scale,
+	//if isNew == 0 {
+	queryIns = `insert into utills_catalog_fields (name, catalog_id, name_db, name_type, max_length, precision, scale,
                                    is_nullable, is_identity, is_primary_key, is_nullable_db, is_list, is_form, link_table_id
-                                   , is_user_create, is_user_modify, is_date_create, is_date_modify ) values
+                                   , is_user_create, is_user_modify, is_date_create, is_date_modify, is_access_check, is_foreign_field ) values
 					(@name, @catalog_id, @name_db, @name_type, @max_length, @precision, @scale, @is_nullable, @is_identity, 
 					 @is_primary_key, @is_nullable_db, @is_list, @is_form, @link_table_id,  @is_user_create,  @is_user_modify,
-					 @is_date_create,  @is_date_modify )`
-	} else {
-		query = `update utills_catalog_fields set name=@name, catalog_id=@catalog_id, name_db= @name_db, name_type = @name_type,
-                                 max_length = @max_length, precision = @precision, scale = @scale, is_nullable = @is_nullable , 
-                                 is_identity = @is_identity,  is_nullable_db=@is_nullable_db, is_primary_key = @is_primary_key, 
-                                 is_list = @is_list, is_form = @is_form, link_table_id = @link_table_id, 
-                                 is_user_create = @is_user_create, is_user_modify = @is_user_modify, is_date_create = @is_date_create, is_date_modify = @is_date_modify
-                                 where id=@id`
-	}
+					 @is_date_create,  @is_date_modify, @is_access_check, @is_foreign_field )`
+	//} else {
+	queryUpd = `update utills_catalog_fields set name=@name, catalog_id=@catalog_id, name_db= @name_db, name_type = @name_type,
+	max_length = @max_length, precision = @precision, scale = @scale, is_nullable = @is_nullable ,
+	is_identity = @is_identity,  is_nullable_db=@is_nullable_db, is_primary_key = @is_primary_key,
+	is_list = @is_list, is_form = @is_form, link_table_id = @link_table_id,
+	is_user_create = @is_user_create, is_user_modify = @is_user_modify, is_date_create = @is_date_create,
+	is_date_modify = @is_date_modify, is_access_check = @is_access_check, is_foreign_field=@is_foreign_field
+	where id=@id`
+	//}
 
 	var stmt *sql.Stmt
 	for _, field := range fields {
-		stmt, _ = db.Prepare(query)
+		if field.Id == 0 {
+			stmt, _ = db.Prepare(queryIns)
+		} else {
+			stmt, _ = db.Prepare(queryUpd)
+		}
 		_, err = stmt.Exec(
 			sql.Named("id", field.Id),
 			sql.Named("name", field.Name),
@@ -296,6 +306,8 @@ func SaveCatalogFields(user *model.User, fields []model.Field) (err error) {
 			sql.Named("is_user_modify", field.IsUserModify),
 			sql.Named("is_date_create", field.IsDateCreate),
 			sql.Named("is_date_modify", field.IsDateModify),
+			sql.Named("is_access_check", field.IsAccessCheck),
+			sql.Named("is_foreign_field", field.IsForeignField),
 		)
 		if err != nil {
 			log.Println(err.Error())
@@ -331,4 +343,28 @@ func GetLinkList(user *model.User, id int) (err error, data []model.LinkTable) {
 		data = append(data, d)
 	}
 	return err, data
+}
+func CreateDbField(user *model.User, field model.Field) (err error) {
+	db, _ := database.GetDb(user.ConnString)
+	//tx, _ := db.Begin()
+	defer db.Close()
+	var query string
+	fieldType := field.NameType
+
+	//пытаемся создать поле
+	switch field.NameType {
+	case "varchar":
+		fieldType += "(255)"
+		break
+	case "list":
+		fieldType = "int"
+		break
+	}
+	query = `alter table ` + field.TableName + `
+    add ` + field.NameDb + ` ` + fieldType
+	_, err = db.Exec(query)
+	if err != nil {
+		log.Println(err.Error())
+	}
+	return err
 }

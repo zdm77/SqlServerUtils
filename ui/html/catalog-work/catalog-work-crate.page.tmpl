@@ -27,7 +27,7 @@
                             <a href="#home" class="nav-link active" data-bs-toggle="tab">Данные</a>
                         </li>
                         <li class="nav-item">
-                            <a href="#access" class="nav-link" data-bs-toggle="tab">Доступ</a>
+                            <a href="#access" class="nav-link" data-bs-toggle="tab" onclick="renderAccess()">Доступ</a>
                         </li>
                     </ul>
                     <div class="tab-content">
@@ -45,8 +45,24 @@
                             </ul>
                         </div>
                         <div class="tab-pane fade" id="access">
-                            <table id="access_data"
-                                   class="table table-striped table-bordered table-sm table-responsive"></table>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item">
+                                    <div class="col-6">
+                                        <button id="btnSave" style="margin-left: 15px;font-size:14px;"
+                                                class="btn btn-primary bi bi-save" onclick="saveAccess()">
+                                            <span style="margin-left: 3px">Сохранить</span>
+                                        </button>
+                                        <button id="back" style="margin-left: 15px;font-size:14px;" class="btn bi bi-skip-backward  bg-success text-light" onclick="history.back(); ">
+                                            <span style="margin-left: 3px">Назад</span>
+                                        </button>
+                                    </div>
+                                </li>
+                                <li class="list-group-item">
+                                    <table id="table_access"
+                                           class="table table-striped table-bordered table-sm table-responsive">
+                                    </table>
+                                </li>
+                            </ul>
                         </div>
                     </div>
                 </div>
@@ -54,7 +70,7 @@
         </div>
         <script>
             const table = document.getElementById('json_data')
-            const tableAccess = document.getElementById('access_data')
+            const tableAccess = document.getElementById('table_access')
 
             function valid() {
                 // if (name.value === '' || tableDb.value === '') {
@@ -66,10 +82,17 @@
 
             let idsNotNull = []
             let listListIdent = []
+            let access = []
+            function saveAccess() {
 
-            function renderAccess() {
-                let html = ''
-                fetch('/api/get-access-catalog-record',
+                let users = []
+                for (a of access) {
+                    let el = document.getElementById('access-'+a)
+                    if (el.checked) {
+                        users.push(a)
+                    }
+                }
+                fetch('/api/save-access-catalog-record',
                     {
                         method: 'POST',
                         headers: {
@@ -78,16 +101,62 @@
                         body: JSON.stringify({
                             id: data.entity_id,
                             table: data.table_name,
+                            access: users.join(','),
                         })
 
                     })
                     .then(response => response.json())
                     .then((response) => {
+                       alert('Доступ сохранен')
+                    })
+            }
+
+            function renderAccess() {
+
+                let html = ''
+
+
+                fetch('/api/get-access-catalog-record',
+                    {
+                        method: 'POST',
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            id: entityId,
+                            table: data.table_name,
+                        })
+
+                    })
+                    .then(response => response.json())
+                    .then((response) => {
+                        console.log(response)
+                        html += '  <thead> '
+                        html += ' <tr>'
+                        html += ' <th>Пользователь</th>'
+                        html += ' <th>Доступ</th>'
+                        html += '</tr>'
+                        html += ' </thead>'
                         if (response) {
                             response.map(function (item) {
+                                html += '<tr>'
+                                html += '<td>'
+                                html += item.user_name
+                                html += '</td>'
+                                html += '<td>'
+                                html += '<div class="form-check form-switch">' +
+                                    '<input  class="form-check-input mx-auto" style="font-size: 24px" type="checkbox" id=access-'+item.user_name
+                                access.push(item.user_name)
+                                if (item.access) {
+                                    html += ' checked '
+                                }
+                                html += ' </td>'
+
 
                             })
+                            tableAccess.innerHTML = html
                         }
+
                     })
             }
 
@@ -234,6 +303,7 @@
                             if (!entityId) {
 
                                 entityId = Number(txtArr[1])
+
                                 //   getFields(true)
 
                             } else {
@@ -258,7 +328,7 @@
                 let
             entityId = {{ .EntityId}}
                 renderTable()
-            renderAccess()
+            // renderAccess()
         </script>
     </main>
 {{end}}

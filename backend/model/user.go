@@ -5,9 +5,10 @@ type User struct {
 	IsLogin    bool
 	ConnString string
 	DbName     string
+	SuperAdmin string
 }
 
 type AccessRecord struct {
-	UserName string
-	Access   bool
+	UserName string `json:"user_name"`
+	Access   bool   `json:"access"`
 }

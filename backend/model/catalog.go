@@ -20,17 +20,20 @@ type Field struct {
 	IsNullable   bool   `json:"is_nullable"`
 	IsNullableDb bool   `json:"is_nullable_db"`
 	//автоинкремент
-	IsIdentity   bool   `json:"is_identity"`
-	IsPrimaryKey bool   `json:"is_primary_key"`
-	Name         string `json:"name"`
-	Value        string `json:"value"`
-	IsList       bool   `json:"is_list"`
-	IsForm       bool   `json:"is_form"`
-	LinkTableId  int    `json:"link_table_id"`
-	IsUserCreate bool   `json:"is_user_create"`
-	IsUserModify bool   `json:"is_user_modify"`
-	IsDateCreate bool   `json:"is_date_create"`
-	IsDateModify bool   `json:"is_date_modify"`
+	IsIdentity     bool   `json:"is_identity"`
+	IsPrimaryKey   bool   `json:"is_primary_key"`
+	Name           string `json:"name"`
+	Value          string `json:"value"`
+	IsList         bool   `json:"is_list"`
+	IsForm         bool   `json:"is_form"`
+	LinkTableId    int    `json:"link_table_id"`
+	IsUserCreate   bool   `json:"is_user_create"`
+	IsUserModify   bool   `json:"is_user_modify"`
+	IsDateCreate   bool   `json:"is_date_create"`
+	IsDateModify   bool   `json:"is_date_modify"`
+	TableName      string `json:"table_name"`
+	IsAccessCheck  bool   `json:"is_access_check"`
+	IsForeignField bool   `json:"is_foreign_field"`
 }
 type LinkTable struct {
 	Id   int    `json:"id"`

@@ -51,12 +51,15 @@ func main() {
 	mux.HandleFunc("/catalog-edit/", catalog_route.CatalogEditHandler)
 
 	//*******Справочники api
+	mux.HandleFunc("/api/get-catalog-fields/", catalog_route.GetCatalogFieldsHandler)
 	mux.HandleFunc("/api/catalog-list/delete/", catalog_route.CatalogListDeleteListHandler)
 	mux.HandleFunc("/api/catalog-list/", catalog_route.GetCatalogListHandler)
 	mux.HandleFunc("/api/catalog-list-link/", catalog_route.GetLinkListHandler)
 	mux.HandleFunc("/api/catalog-save", catalog_route.CatalogSaveHandler)
 	mux.HandleFunc("/api/get-db-fields", catalog_route.GetDbFieldsHandler)
 	mux.HandleFunc("/api/save-db-fields", catalog_route.SaveDbFieldsHandler)
+	//Новое поле
+	mux.HandleFunc("/api/create-db-field", catalog_route.CreateDbFieldHandler)
 
 	mux.HandleFunc("/task1", task_route.Task1Handler)
 
@@ -72,6 +75,7 @@ func main() {
 	mux.HandleFunc("/api/task-exe", task_route.TaskExeHandler)
 	//доступ
 	mux.HandleFunc("/api/get-access-catalog-record", catalog_work_route.CatalogAccessRecordHandler)
+	mux.HandleFunc("/api/save-access-catalog-record", catalog_work_route.SaveAccessRecordHandler)
 	//mux.HandleFunc("/login", route.Login)
 	host, _ := os.Hostname()
 

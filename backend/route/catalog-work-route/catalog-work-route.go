@@ -173,3 +173,30 @@ func CatalogAccessRecordHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write(data)
 	}
 }
+func SaveAccessRecordHandler(w http.ResponseWriter, r *http.Request) {
+	user := session.GetSessionData(r)
+	if user != nil {
+		decoder := json.NewDecoder(r.Body)
+		type Param struct {
+			Id     int    `json:"id"`
+			Table  string `json:"table"`
+			Access string `json:"access"`
+		}
+		var param Param
+		err := decoder.Decode(&param)
+		if err != nil {
+			log.Println(err.Error())
+		}
+		err = db_catalog_work.SaveCatalogAccessRecord(user, param.Id, param.Table, param.Access)
+		var data []byte
+		if err != nil {
+			data, _ = json.Marshal(route.Message{Text: err.Error()})
+		} else {
+			data, _ = json.Marshal(route.Message{Text: "ok"})
+		}
+		w.Write(data)
+	} else {
+		data, _ := json.Marshal(route.Message{Text: "not-login"})
+		w.Write(data)
+	}
+}

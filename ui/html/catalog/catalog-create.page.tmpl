@@ -26,7 +26,59 @@
             <ul class="list-group list-group-flush">
                 <li class="list-group-item">
                     <div class="col-6">
-                        {{template "save"}}
+                        <button id="btnSave" style="margin-left: 15px;font-size:14px;"
+                                class="btn btn-primary bi bi-save" onclick="save()">
+                            <span style="margin-left: 3px">Сохранить</span>
+                        </button>
+                        <button type="button" class="btn btn-primary bi bi-plus-circle" data-bs-toggle="modal"
+                                data-bs-target="#modalField">
+                            Создать
+                        </button>
+                        <!-- Modal -->
+                        <div class="modal fade" id="modalField" tabindex="-1" aria-labelledby="modalFieldLabel"
+                             aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="modalFieldLabel">Новое поле</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <table id="table_field"
+                                               class="table table-striped table-bordered table-sm table-responsive">
+                                            <tr>
+                                                <td>Поле БД</td>
+                                                <td><input class="form-control" id="field_name" value=""/></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Тип</td>
+                                                <td>
+                                                    <select class="form-select" id="field_type">
+                                                        <option selected value="varchar">Строка</option>
+                                                        <option value="int">Целое число</option>
+                                                        <option value="float">Число с плавающей запятой</option>
+                                                        <option value="date">Дата</option>
+                                                        <option value="bit">Логический (да/нет)</option>
+                                                        <option value="list">Список</option>
+                                                    </select>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть
+                                        </button>
+                                        <button type="button" class="btn btn-primary" onclick="saveField()">Сохранить
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button id="back" style="margin-left: 15px;font-size:14px;"
+                                class="btn bi bi-skip-backward  bg-success text-light" onclick="history.back(); ">
+                            <span style="margin-left: 3px">Назад</span>
+                        </button>
                     </div>
                 </li>
                 <li class="list-group-item">
@@ -44,8 +96,17 @@
             }
         </style>
         <script>
+            let myModalEl = document.getElementById('modalField')
 
+            let myModal = new bootstrap.Modal(document.getElementById('modalField'), {
+                keyboard: false
+            })
 
+            let inputNameField = document.getElementById('field_name')
+
+            myModalEl.addEventListener('shown.bs.modal', function () {
+                inputNameField.focus()
+            })
             const name = document.getElementById('name')
             name.addEventListener('keyup', function () {
                 valid()
@@ -60,6 +121,69 @@
             let fields = {{ .Fields}}
             if (fields && fields.length > 0) renderTable()
 
+            function saveField() {
+                let nameField = document.getElementById('field_name')
+                let typeField = document.getElementById('field_type')
+                fetch('/api/create-db-field',
+                    {
+                        method: 'POST',
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            name_db: nameField.value,
+                            table_name: document.getElementById('table_name').value,
+                            name_type: typeField.value,
+                        })
+
+                    })
+                    .then(response => response.json())
+                    .then((response) => {
+
+                        if (response == "ok") {
+
+                            myModal.hide()
+                            // for (let i = 0; i < fields.length; i++) {
+                            //     if (fields[i] === nameField.value) {
+                            //         if (typeField.value === 'list') {
+                            //
+                            //             fields[i].is_foreign_field = true
+                            //         }
+                            //         fields.push(item)
+                            //     }
+                            // }
+                            //    let is_foreign_field = false
+
+                            fields.push({
+                                catalog_id: id,
+                                name_db: nameField.value,
+                                is_foreign_field: typeField.value === 'list',
+                                is_nullable: true,
+                                is_nullable_db: true,
+                            })
+                            fetch('/api/save-db-fields',
+                                {
+                                    method: 'POST',
+                                    headers: {
+                                        "Content-Type": "application/json"
+                                    },
+                                    body: JSON.stringify(fields)
+                                })
+                                .then(response => response.json())
+                                .then((response) => {
+
+                                    window.location.reload();
+
+
+                                })
+                            //getFieldsByCatalogId(nameField.value, typeField.value)
+                        } else {
+                            alert(response)
+                        }
+                    })
+
+
+            }
 
             function valid() {
                 if (name.value === '' || tableDb.value === '') {
@@ -68,6 +192,7 @@
                     btnSave.disabled = false
                 }
             }
+
 
             valid()
             // function setFieldsFromTable(){
@@ -111,7 +236,7 @@
                     }
 
                     elem = document.getElementById('isUserMod-' + i)
-                    if (elem &&  elem.checked) {
+                    if (elem && elem.checked) {
                         fields[i].is_user_modify = true
                     } else {
                         fields[i].is_user_modify = false
@@ -131,6 +256,13 @@
                         fields[i].is_date_modify = false
                     }
 
+                    //проверяет доступ
+                    elem = document.getElementById('isAccess' + i)
+                    if (elem.checked) {
+                        fields[i].is_access_check = true
+                    } else {
+                        fields[i].is_access_check = false
+                    }
 
                     //fields[i].is_list = !elem.checked
 
@@ -160,10 +292,10 @@
                 // if (fIsNotNull.checked) {
                 //
                 // }
-                const fIsDateCreate =   document.getElementById('isDateCreate-' + id)
-                const fisDateMod =   document.getElementById('isDateMod-' + id)
-                const fisUserCreate =   document.getElementById('isUserCreate-' + id)
-                const fisUserMod =   document.getElementById('isUserMod-' + id)
+                const fIsDateCreate = document.getElementById('isDateCreate-' + id)
+                const fisDateMod = document.getElementById('isDateMod-' + id)
+                const fisUserCreate = document.getElementById('isUserCreate-' + id)
+                const fisUserMod = document.getElementById('isUserMod-' + id)
                 if ((fIsDateCreate && fIsDateCreate.checked)
                     || (fisDateMod && fisDateMod.checked)
                     || (fisUserCreate && fisUserCreate.checked)
@@ -205,7 +337,7 @@
                 }
                 idDisableOnlyStr = idDisable
                 idDisable += arr[1]
-                let elForm = document.getElementById('isForm'+arr[1])
+                let elForm = document.getElementById('isForm' + arr[1])
                 let elemDis = document.getElementById(idDisable)
                 if (elem.checked) {
 
@@ -224,13 +356,13 @@
 
                         }
                     }
-                    elForm.checked=false
-                    elForm.disabled=true
+                    elForm.checked = false
+                    elForm.disabled = true
 
                 } else {
 
                     elemDis.disabled = false
-                    elForm.disabled=false
+                    elForm.disabled = false
                 }
 
             }
@@ -244,6 +376,7 @@
                 html += '<th rowspan="2" >Поле</th>'
                 html += '<th rowspan="2" >Наименование</th>'
                 html += '<th width="60px" rowspan="2" >Обяза-<br/>тельное</th>'
+                html += '<th width="60px" rowspan="2" >Проверка<br/>доступа</th>'
                 html += '<th width="60px" colspan="2" >Отображение</th>'
                 // html += '<th width="60px" rowspan="2" >В форме</th>'
                 html += '<th rowspan="2" >Список</th>'
@@ -293,8 +426,22 @@
 
                         html += '<i class="bi bi-check2" style="font-size: 25px"></i>'
                     }
-                    //В списке
+                    //проверка доступа
+                    html += '<td style="text-align: center">'
+
+                    html += '<div class="form-check form-switch">' +
+                        '<input  class="form-check-input mx-auto" style="font-size: 24px" type="checkbox"  id=isAccess' + counter
+
+                    if (item.is_access_check) {
+                        html += ' checked '
+                    }
+
+                    html += '></div>'
+
                     html += '</td>'
+
+
+                    //В списке
                     html += '<td style="text-align: center">'
 
                     html += '<div class="form-check form-switch">' +
@@ -330,7 +477,8 @@
                     //////////////
                     //Выпадающий список
                     html += '<td>'
-                    if  (item.name_type == 'int' && !item.is_identity) {
+                    // if (item.name_type == 'int' && !item.is_identity) {
+                    if (item.is_foreign_field) {
                         html += ' <select id="linkId' + counter + '" name="task" class="form-select"></select> '
                     }
 
@@ -402,7 +550,7 @@
             function getListForDropdown() {
                 let list = []
 
-                fetch('/api/catalog-list',
+                fetch('/api/catalog-list/?id=Справочники',
                     {
                         method: 'POST',
                         headers: {
@@ -447,7 +595,7 @@
 
             }
 
-            function getFields(isNew) {
+            function getFields() {
                 fields = []
                 fetch('/api/get-db-fields',
                     {
@@ -465,6 +613,7 @@
                     .then(response => response.json())
                     .then((response) => {
                         fields = response
+
                         fields[0].catalog_id = id
                         renderTable()
                     })
@@ -472,6 +621,7 @@
 
             function save() {
 
+                // return
                 fetch('/api/catalog-save',
                     {
                         method: 'POST',
@@ -479,7 +629,7 @@
                             "Content-Type": "application/json"
                         },
                         body: JSON.stringify({
-                            id: id!==0 ? id : 0,
+                            id: id !== 0 ? id : 0,
                             name: name.value,
                             table_name: tableDb.value,
                             type_entity: typeEntity
@@ -494,7 +644,8 @@
                         if (txtArr[0] === "ok") {
                             if (!id) {
                                 id = Number(txtArr[1])
-                                getFields(true)
+                                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!/////
+                                getFields()
                                 for (field of fields) {
 
                                     if (!field.is_nullable_db && field.name === '' && !field.is_identity) {
@@ -513,7 +664,7 @@
                                         return
                                     }
                                 }
-                                console.log(fields)
+
                                 fetch('/api/save-db-fields',
                                     {
                                         method: 'POST',
@@ -538,9 +689,8 @@
 
             {{/*console.log({{ .Fields}})*/}}
             let id = {{ .Id}}
-            let typeEntity = {{ .TypeEntity}}
-
-
+                let
+            typeEntity = {{ .TypeEntity}}
         </script>
     </main>
 {{end}}
