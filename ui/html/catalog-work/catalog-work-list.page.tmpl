@@ -59,8 +59,7 @@
                     .then((response) => {
                         if (response.text != 'not-login') {
                             console.log(response)
-                            const obj = JSON.parse(response.json);
-                           
+                            const obj = JSON.parse(json);
                             document.getElementById('cardHeader').innerText = response.name_catalog
                             id = response.catalog_id
                             const fieldId = response.field_id

@@ -1,6 +1,7 @@
 package db_catalog_work
 
 import (
+	"encoding/json"
 	"log"
 	"sqlutils/backend/database"
 	"sqlutils/backend/database/db_catalog"
@@ -20,6 +21,7 @@ type FieldVals struct {
 	IsList      []bool     `json:"is_list"`
 	Data        [][]string `json:"data"`
 	Json        string     `json:"json"`
+	Types       []string   `json:"types"`
 }
 
 func GetTableLinkById(user *model.User, id int) (err error, table string) {
@@ -41,9 +43,11 @@ func GetCatalogWorkListByIdJson(user *model.User, id int, isJSONParse bool) (err
 	var isList []bool
 	query := `select `
 	var fields []string
+
 	var fieldId string
 	var valuesId []string
 	var joinTables string
+	var types []string
 	type Access struct {
 		id    string
 		user  []string
@@ -51,9 +55,14 @@ func GetCatalogWorkListByIdJson(user *model.User, id int, isJSONParse bool) (err
 	}
 	isAccessInTable := false
 	var whereAccess []string
+	//типы
+	for _, cat := range catalog.Fields {
+		types = append(types, cat.NameType)
+	}
 	if user.SuperAdmin != user.Login {
 		//ищем списки для проверки прав
 		for _, cat := range catalog.Fields {
+
 			if cat.LinkTableId != 0 && cat.IsAccessCheck {
 				_, tableLink := GetTableLinkById(user, cat.LinkTableId)
 
@@ -92,6 +101,7 @@ func GetCatalogWorkListByIdJson(user *model.User, id int, isJSONParse bool) (err
 		var field string
 		if cat.IsPrimaryKey {
 			fieldId = cat.NameDb
+
 		}
 		if cat.IsIdentity || cat.Name != "" || !cat.IsNullable || !cat.IsNullableDb {
 			if cat.LinkTableId != 0 {
@@ -136,13 +146,24 @@ func GetCatalogWorkListByIdJson(user *model.User, id int, isJSONParse bool) (err
 			return err, result
 		}
 	}
+	var b []map[string]string
+	json.Unmarshal([]byte(jsonString), &b)
+	for _, dt := range b {
+		for nameDb, val := range dt {
+			if nameDb == fieldId {
+				valuesId = append(valuesId, val)
+			}
+
+		}
+
+	}
 	result = FieldVals{
 		CatalogId:   id,
 		FieldId:     fieldId,
 		NameCatalog: catalog.Name,
 		Headers:     headers,
 		Fields:      fields,
-		Vals:        data,
+		Types:       types,
 		ValuesId:    valuesId,
 		IsList:      isList,
 		Data:        data,

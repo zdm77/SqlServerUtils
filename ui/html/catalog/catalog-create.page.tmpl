@@ -13,11 +13,11 @@
                         <div class="row">
                             <div class="col-3">
                                 <label for="name" class="form-label">Наименование</label>
-                                <input autocomplete="off" class="form-control" id="name" value={{ .Name}}>
+                                <input class="form-control" id="name" value={{ .Name}}>
                             </div>
                             <div class="col-3">
-                                <label for="table_db" class="form-label">Таблица БД</label>
-                                <input autocomplete="off" class="form-control" id="table_name" value={{ .TableName}}>
+                                <label for="table_name" class="form-label">Таблица БД</label>
+                                <input class="form-control" id="table_name" value={{ .TableName}}>
                             </div>
                         </div>
                     </li>
@@ -35,7 +35,8 @@
                             Создать
                         </button>
                         <button id="back" style="margin-left: 15px;font-size:14px;"
-                                class="btn bi bi-skip-backward  bg-success text-light" onclick="document.location='/catalog-list/?id='+typeEntity ">
+                                class="btn bi bi-skip-backward  bg-success text-light"
+                                onclick="document.location='/catalog-list/?id='+typeEntity ">
                             <span style="margin-left: 3px">Назад</span>
                         </button>
                         <!-- Modal -->
@@ -79,7 +80,6 @@
                                 </div>
                             </div>
                         </div>
-
                     </div>
                 </li>
                 <li class="list-group-item">
@@ -567,28 +567,28 @@
                             response.map(function (item) {
                                 list.push(item)
                             })
+                            if (fields && fields.length) {
+                                for (let i = 0; i < fields.length; i++) {
+                                    let htmlD = ''
+                                    let selectedId = 0
+                                    let el = document.getElementById('linkId' + i)
+                                    htmlD += '<option value="0"></option>'
 
-                            for (let i = 0; i < fields.length; i++) {
-                                let htmlD = ''
-                                let selectedId = 0
-                                let el = document.getElementById('linkId' + i)
-                                htmlD += '<option value="0"></option>'
-
-                                for (let j = 0; j < list.length; j++) {
-                                    //  console.log(list[j].id, fields[i].link_table_id)
-                                    if (list[j].id === fields[i].link_table_id) {
-                                        selectedId = j + 1
+                                    for (let j = 0; j < list.length; j++) {
+                                        //  console.log(list[j].id, fields[i].link_table_id)
+                                        if (list[j].id === fields[i].link_table_id) {
+                                            selectedId = j + 1
+                                        }
+                                        // console.log(list[j])
+                                        htmlD += '<option value="' + list[j].id + '">' + list[j].name + '</option>'
                                     }
-                                    // console.log(list[j])
-                                    htmlD += '<option value="' + list[j].id + '">' + list[j].name + '</option>'
-                                }
-                                if (el) {
-                                    el.innerHTML = htmlD
-                                    el.selectedIndex = selectedId
-                                }
+                                    if (el) {
+                                        el.innerHTML = htmlD
+                                        el.selectedIndex = selectedId
+                                    }
 
+                                }
                             }
-
 
                         } else {
                             document.location = '/'
@@ -698,6 +698,9 @@
             let id = {{ .Id}}
                 let
             typeEntity = {{ .TypeEntity}}
+                $(document).ready(function (e) {
+                    $('input,select,textarea').attr("autocomplete", "off");
+                })
         </script>
     </main>
 {{end}}

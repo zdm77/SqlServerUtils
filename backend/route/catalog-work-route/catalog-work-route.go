@@ -20,7 +20,7 @@ func CatalogWorkListHandler(w http.ResponseWriter, r *http.Request) {
 		id, err := strconv.Atoi(keys.Get("id"))
 		//	_, data := db_catalog_work.GetCatalogWorkListById(user, id)
 		files := []string{
-			"./ui/html/catalog-work/catalog-work-list.page.tmpl",
+			"./ui/html/catalog-work/catalog-work-list-json.tmpl",
 			"./ui/html/base.layout.tmpl",
 			"./ui/html/top.layout.tmpl",
 			"./ui/html/controls/create.tmpl",
