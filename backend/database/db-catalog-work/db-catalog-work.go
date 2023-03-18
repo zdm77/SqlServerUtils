@@ -22,6 +22,7 @@ type FieldVals struct {
 	Data        [][]string `json:"data"`
 	Json        string     `json:"json"`
 	Types       []string   `json:"types"`
+	FieldNames  []string   `json:"field_names"`
 }
 
 func GetTableLinkById(user *model.User, id int) (err error, table string) {
@@ -41,13 +42,14 @@ func GetCatalogWorkListByIdJson(user *model.User, id int, isJSONParse bool) (err
 	var data [][]string
 	var headers []string
 	var isList []bool
-	query := `select `
+	query := `select  `
 	var fields []string
 
 	var fieldId string
 	var valuesId []string
 	var joinTables string
 	var types []string
+	var fieldNames []string
 	type Access struct {
 		id    string
 		user  []string
@@ -101,13 +103,14 @@ func GetCatalogWorkListByIdJson(user *model.User, id int, isJSONParse bool) (err
 		var field string
 		if cat.IsPrimaryKey {
 			fieldId = cat.NameDb
-
+		} else {
+			fieldNames = append(fieldNames, cat.NameDb)
 		}
 		if cat.IsIdentity || cat.Name != "" || !cat.IsNullable || !cat.IsNullableDb {
 			if cat.LinkTableId != 0 {
 				_, table := GetTableLinkById(user, cat.LinkTableId)
 				joinTables += " left join " + table + " on " + catalog.TableName + "." + cat.NameDb + "=" + table + ".id"
-				field = "coalesce(cast(" + table + ".name as varchar(255)), '') " + cat.Name
+				field = "coalesce(cast(" + table + ".name as varchar(255)), '') " + cat.NameDb
 			} else {
 				field = "coalesce(cast(" + catalog.TableName + "." + cat.NameDb + " as varchar(255)), '') " + cat.NameDb
 			}
@@ -122,6 +125,8 @@ func GetCatalogWorkListByIdJson(user *model.User, id int, isJSONParse bool) (err
 
 		}
 	}
+
+	fields = append(fields, "'' is_delete")
 	query += strings.Join(fields, ",") + " from " + catalog.TableName
 	query += joinTables
 	if user.SuperAdmin != user.Login {
@@ -137,13 +142,20 @@ func GetCatalogWorkListByIdJson(user *model.User, id int, isJSONParse bool) (err
 		}
 	}
 	var jsonString string
+	//var json2 strings.
 	if isJSONParse {
 		query += "  for json auto "
 
-		err = db.QueryRow(query).Scan(&jsonString)
-		if err != nil {
-			log.Println(err.Error())
-			return err, result
+		rows, err := db.Query(query)
+		defer rows.Close()
+		for rows.Next() {
+			var s string
+			err = rows.Scan(&s)
+			if err != nil {
+				log.Println(err.Error())
+				return err, result
+			}
+			jsonString += s
 		}
 	}
 	var b []map[string]string
@@ -157,6 +169,7 @@ func GetCatalogWorkListByIdJson(user *model.User, id int, isJSONParse bool) (err
 		}
 
 	}
+
 	result = FieldVals{
 		CatalogId:   id,
 		FieldId:     fieldId,
@@ -168,6 +181,7 @@ func GetCatalogWorkListByIdJson(user *model.User, id int, isJSONParse bool) (err
 		IsList:      isList,
 		Data:        data,
 		Json:        jsonString,
+		FieldNames:  fieldNames,
 	}
 	return err, result
 }

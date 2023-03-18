@@ -1,0 +1,164 @@
+def read_shovel_plan(path: str) -> (pd.DataFrame, int):
+    start_time = timeit.default_timer()
+    excel_reader.logger.info(f"Going to read excel file: {path}")
+    res: pd.DataFrame = pd.DataFrame()
+    error: int = 0
+    sheet_name: str = "План BI"
+    try:
+        file: pd.DataFrame = pd.read_excel(path, skiprows=8, sheet_name=sheet_name, na_values=['0x7', '', ' ']).iloc[:,
+                             4:].rename(columns={'Проверка.1': 'Проверка'})
+        file = file.loc[:, ~file.columns.str.contains('^Unnamed')]
+        if 'Показатель итог' in file.columns:
+            file = file.drop(columns=['Показатель итог'])
+        if 'Экспортный код' in file.columns:
+            file = file.melt(id_vars=['Дата', 'Экскаватор', 'Экспортный код', '№ ЭКС', 'Филиал'],
+                             var_name='indicator_name',
+                             value_name='indicator_amount')
+        else:
+            file = file.melt(id_vars=['Дата', 'Экскаватор', '№ ЭКС', 'Филиал'], var_name='indicator_name',
+                             value_name='indicator_amount')
+        indicator_names = pd.read_excel(path, skiprows=5,
+                                        nrows=3, na_values=['0x7'], sheet_name=sheet_name).iloc[:, 4:].T.reset_index(
+            drop=True).dropna().drop_duplicates(subset=[1])[[0, 2]]
+        indicator_names.columns = ['measure_name', 'indicator_name']
+        indicator_names['indicator_name'] = indicator_names['indicator_name'].astype(str)
+        file = file.merge(indicator_names, on=['indicator_name'], how='left')
+        file.loc[file['measure_name'].isnull(), 'measure_name'] = file.loc[file['measure_name'].isnull()][
+            'indicator_name'].values
+        rename_cols: Dict = {'Экскаватор': 'vehicle_name', 'Экспортный код': 'vehicle_id'}
+        file = file.rename(columns=rename_cols)
+        file = file.assign(is_plan=1)
+        res = file.copy()
+        if res['Дата'].astype(str).head(1).str.contains("-").values[0]:
+            res['Дата'] = pd.to_datetime(res['Дата']).dt.date
+        else:
+            res['Дата'] = pd.to_numeric(res['Дата'], errors='coerce')
+            res['Дата'] = pd.to_datetime(res['Дата'], unit='d', origin='1899-12-30').dt.date
+        res = res.rename(columns={'Дата': 'indicator_date'})
+        res["indicator_amount"] = pd.to_numeric(res["indicator_amount"], errors='coerce')
+    except Exception as e:
+        excel_reader.logger.error(f"Can't read excel file {path}, " + str(e))
+        error = 1
+    finally:
+        elapsed = timeit.default_timer() - start_time
+        excel_reader.logger.info(f"Parsed excel file into {res.shape[0]} records in {elapsed} s.")
+        return res, error
+
+# used
+# чтение файлов с сетевой шары, недельные планы
+@__run_etl_model
+def shovel_plan(env: str = 'dev', period: str = 'week', quarry: List[str] = None, is_init: bool = False, path: str = 'shovel_plan_path') -> None:
+    if quarry is None:
+        etl_model.logger.error(f"Shovel_plan received empty quarry list")
+    else:
+        if path == 'shovel_plan_path':
+            file_name_pattern: str = "_недельное_" if period == 'week' else 'месяц'
+        else:
+            file_name_pattern: str = "_недельное_" if period == 'week' else "_месячное_"
+        table_name: str = "indicator_tmp"
+        log_table_name: str = "indicator_tmp_log"
+        file_path = config.cfg[path][env]
+        indicator_tmp_log = select_indicator_tmp_log(db_cursor=server_cursor)
+        indicator_tmp_log_cols: List = ['directory', 'file_name', 'processing_time', 'is_success']
+        # noinspection PyUnresolvedReferences
+        subfolders: List = [f.name for f in os.scandir(file_path) if (f.is_dir() and f.name[0] != '.')]
+        etl_model.logger.info(f"Found {len(subfolders)} subfolders in directory {file_path}")
+        etl_model.logger.info(f"Going to read files for {len(quarry)} quarries")
+        for q in quarry:
+            entp_exp_code: int = config.cfg[q]['entp_exp_code']
+            directory_name = select_dir_by_exp_code(db_cursor=server_cursor, entp_exp_code=entp_exp_code)
+            d = directory_name['dir_for_plan'].values[0]
+            print()
+            if not d in subfolders:
+                etl_model.logger.error(f"Subfolder {d} not found on disk in {file_path}")
+            else:
+                folder: str = str(d)
+                files: List = os.listdir(path=os.path.join(file_path, folder))  # file_path + "/" + folder
+                etl_model.logger.info(f"Found {len(files)} files in directory: {folder}")
+                files_df: pd.DataFrame = pd.DataFrame(files, columns=['file_name'])
+                if not files_df.empty:
+                    files_df = files_df.loc[files_df['file_name'].str.lower().str.contains(file_name_pattern)]
+                    etl_model.logger.info(f"Found {str(files_df.shape[0])} files with file name pattern: {file_name_pattern} in directory: {folder}")
+                if is_init:
+                    etl_model.logger.info(f"Going to load all files in directory {folder} with delete logic")
+                else:
+                    if not indicator_tmp_log.empty:
+                        files_df = files_df.loc[~(files_df['file_name'].isin(indicator_tmp_log['file_name'].values))].copy()
+                        etl_model.logger.info(f"Found {files_df.shape[0]} new files in directory {folder}")
+                for f_r in files_df.file_name.values:
+                    f: str = str(f_r)
+                    path_f: str = os.path.join(file_path, folder, f)  # file_path + "/" + folder + "/" + f
+                    result: Tuple[pd.DataFrame, int] = read_shovel_plan(path_f)
+                    plan: pd.DataFrame = result[0]
+                    error: int = result[1]
+                    match error:
+                        case 0:
+                            etl_model.logger.info(f"shovel_plan got {plan.shape[0]} records from file {path_f}")
+                            plan = plan.dropna(subset=['indicator_amount'])
+                            plan = plan.loc[~(plan['indicator_amount'] == 0)]
+                            etl_model.logger.info(f"shovel_plan got {plan.shape[0]} non empty records from file {path_f}")
+                            log_info: pd.DataFrame = pd.DataFrame([[folder, f, datetime.now(), 1]], columns=indicator_tmp_log_cols)
+                            if not plan.empty:
+                                enterprise = select_enterprise_id_by_folder(db_cursor=server_cursor, folder=folder)
+                                print()
+                                if not enterprise.empty:
+                                    enterprise_id = enterprise.enterprise_id.values[0]
+                                else:
+                                    enterprise_id = None
+                                plan = plan.assign(enterprise_id=enterprise_id)
+                                if 'vehicle_id' not in plan.columns:
+                                    vehicle_id = select_gd_name_export_code(db_cursor=server_cursor)
+                                    print()
+                                    if not vehicle_id.empty:
+                                        plan = plan.merge(vehicle_id, on=['vehicle_name'], how='left')
+                                    else:
+                                        plan = plan.assign(vehicle_id=None)
+                                period_id: int = 1 if period == 'week' else 2
+                                plan = plan.assign(period_id=period_id)
+                                cols_to_save = ['enterprise_id', 'indicator_date', 'is_plan', 'vehicle_id', 'vehicle_name',
+                                                'indicator_name', 'measure_name', 'indicator_amount', 'period_id']
+                                toSave_df = plan[cols_to_save].copy()
+                                toSave_df = toSave_df.replace([np.inf, -np.inf], None)
+                                toSave_df = toSave_df.astype(object).where(toSave_df.notna(), None)
+                                data: List = list(toSave_df.itertuples(index=False, name=None))
+                                if is_init:
+                                    dates_list: List = pd.to_datetime(toSave_df['indicator_date']).dt.date.astype(str).unique()
+                                    dates_list_str: str = str(tuple(dates_list))
+                                    if len(dates_list) == 1:
+                                        dates_list_str = dates_list_str.replace(",", "")
+                                    delete_from_table(db_cursor=server_cursor, table=table_name,
+                                                      condition=f"indicator_date IN {dates_list_str} AND enterprise_id={enterprise_id} "
+                                                                f"AND period_id={period_id} AND is_plan=1 "
+                                                                "AND indicator_name not in ('КИО БУЛЬДОЗЕРЫ','КТГ БУЛЬДОЗЕРЫ','КИО ЭКС АВТОСХЕМА','КИО ЭКС АВТОСХЕМА БЕЗ ВР',"
+                                                                "'КИО ЭКС ТЕХНОЛОГИЯ','КТГ ЭКС АВТОСХЕМА','КТГ ЭКС ТЕХНОЛОГИЯ') ")
+                                insert_df_to_db(db_cursor=server_cursor, table=table_name, data=data, columns=cols_to_save,
+                                                truncate=False)
+                                try:
+                                    archive_path = config.cfg['archive_path'][env]
+                                    archive_folder = os.path.join(archive_path, period, folder)
+                                    if not os.path.exists(archive_folder):
+                                        os.makedirs(archive_folder)
+                                    archive_files: List = os.listdir(path=archive_folder)
+                                    if f in archive_files:
+                                        f_format = f.split('.')[-1]
+                                        f_new = f.replace(f'.{f_format}', '') + '_' + datetime.now().strftime(
+                                            '%d%m%Y_%H%M%S') + f'.{f_format}'
+                                        shutil.move(path_f, os.path.join(archive_folder, f_new))
+                                    else:
+                                        f_new = f
+                                        shutil.move(path_f, os.path.join(archive_folder, f_new))
+                                    etl_model.logger.info(f"file {path_f} was moved to archive {archive_folder} as {f_new}")
+                                except Exception as e_move:
+                                    etl_model.logger.info(f"can't move file {path_f} to archive {archive_folder}, error {e_move}")
+
+                        case _:
+                            etl_model.logger.info(f"shovel_plan got 0 records from file {path_f}")
+                            log_info: pd.DataFrame = pd.DataFrame([[folder, f, datetime.now(), 0]], columns=indicator_tmp_log_cols)
+                    if not log_info.empty:
+                        cols_to_save = indicator_tmp_log_cols.copy()
+                        toSave_df = log_info[cols_to_save].copy()
+                        toSave_df = toSave_df.replace([np.inf, -np.inf], None)
+                        toSave_df = toSave_df.astype(object).where(toSave_df.notna(), None)
+                        data: List = list(toSave_df.itertuples(index=False, name=None))
+                        insert_df_to_db(db_cursor=server_cursor, table=log_table_name, data=data, columns=cols_to_save,
+                                        truncate=False)

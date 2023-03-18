@@ -16,12 +16,10 @@
                             style="font-size:14px;"
                             onclick="refresh()">
                         <span style="margin-left: 3px">Обновить</span></button>
-
-                        <button  id="buttonClear" class="btn btn-outline-success bi bi-x-circle "
-                                style="font-size:14px;"
-                                onclick="clearFind()">
-                            <span style="margin-left: 3px">Очистить фильтр</span></button>
-
+                    <button id="buttonClear" class="btn btn-outline-success bi bi-x-circle "
+                            style="font-size:14px;"
+                            onclick="clearFind()">
+                        <span style="margin-left: 3px">Очистить фильтр</span></button>
                 </li>
                 <li class="list-group-item" id="li-table">
                 </li>
@@ -40,6 +38,8 @@
 
             let arrFind = []
             let headers = []
+            let dataTable = []
+            let columns = []
 
             function clearFind() {
 
@@ -77,7 +77,7 @@
                     }
 
                 }
-                if (arrFind.length>0) {
+                if (arrFind.length > 0) {
 
                     $('#buttonClear').show()
                 } else {
@@ -94,7 +94,7 @@
                 let liTable = document.getElementById("li-table")
                 liTable.innerHTML = '  <table id="json_data"  class="table table-striped table-bordered table-sm table-responsive"></table>'
                 let table = document.getElementById("json_data");
-                console.log(table)
+                let jsonData
                 table.innerHTML = ''
 
                 let html = ''
@@ -106,15 +106,15 @@
                         },
                         body: JSON.stringify({
                             id: id,
-
                         })
 
                     })
                     .then(response => response.json())
                     .then((response) => {
                         if (response.text != 'not-login') {
-                            console.log(response)
+                             console.log(response)
                             const obj = JSON.parse(response.json);
+
                             headers = response.headers
                             document.getElementById('cardHeader').innerText = response.name_catalog
                             id = response.catalog_id
@@ -127,6 +127,7 @@
                             //поиск
                             html += '<tr>'
                             for (let i = 1; i < response.headers.length; i++) {
+
                                 switch (response.types[i]) {
                                     case 'date': {
                                         html += '<td><input id="find' + i + '" type="date" class="form-control" onchange="find(this)"/></td>'
@@ -137,14 +138,31 @@
                                         break
                                     }
                                 }
-
-
                             }
-
+                            html += '<td></td>'
                             html += '</tr>'
                             //заголовки
                             html += '<tr>'
+                            let isHref = false
                             for (let i = 0; i < response.headers.length; i++) {
+                                if (response.field_names[i]) {
+                                    if (!isHref) {
+                                        const valId = response.values_id[i]
+                                        columns.push({
+                                            data: response.field_names[i],
+                                            render: function (data, type, row, meta) {
+                                                if (type === 'display') {
+                                                    data = '<a href="/catalog-work-edit/?id=' + id + '&entityId=' + row["id"] + '">' + data + '</a>'
+                                                }
+
+                                                return data;
+                                            }
+                                        })
+                                        isHref = true
+                                    } else {
+                                        columns.push({ data: response.field_names[i],})
+                                    }
+                                }
                                 const val = response.headers[i]
                                 if (val === fieldId) {
                                     fieldIdIdx = i
@@ -153,7 +171,16 @@
                                         html += '<th>' + val + '</th> '
                                 }
                             }
-                            html += '<th></th>'
+                            columns.push({
+                                data: "is_delete",
+                                render: function (data, type, row, meta) {
+                                    return  '<i class="bi-trash text-danger" style="cursor: pointer"' +
+                                        ' onclick="deleteTask(' + row["id"]  + ',' + id + ')"></i>'
+
+
+                                }
+                            })
+                            html += '<th>Дейсвие</th>'
                             html += '</tr>'
 
 
@@ -162,13 +189,17 @@
 
                             let counter = 0
                             for (str in obj) {
-                                html += '<tr>'
+
+                                let dtTable = []
+                                let column = []
+                                // html += '<tr>'
                                 let row = obj[str]
 
                                 let isHref = false
                                 let valId = 0
                                 valId = response.values_id[counter]
                                 let i = 0
+                                dtTable.push(row)
                                 for (key in row) {
 
                                     let val = row[key]
@@ -178,103 +209,130 @@
                                     }
 
                                     if (response.headers[i] != response.field_id) {
-                                        html += '<td>'
-                                        if (val === 'unchecked') {
-                                            val = ''
-                                        }
-                                        if (val === 'checked') {
-                                            html += '<i class="bi bi-check2" style="font-size: 25px"></i>'
-                                        } else {
-                                            if (!isHref) {
+                                        // dtTable.push({
+                                        //     "name": val
+                                        // })
 
-                                                html += '<a href="/catalog-work-edit/?id=' + id + '&entityId=' + valId + '">'
-                                                html += val + '</a> '
-                                                isHref = true
-
-                                            } else {
-                                                html += val
-                                            }
-
-                                        }
-                                        html += '</td>'
+                                        //     html += '<td>'
+                                        //     if (val === 'unchecked') {
+                                        //         val = ''
+                                        //     }
+                                        //     if (val === 'checked') {
+                                        //         html += '<i class="bi bi-check2" style="font-size: 25px"></i>'
+                                        //     } else {
+                                        //         if (!isHref) {
+                                        //
+                                        //             html += '<a href="/catalog-work-edit/?id=' + id + '&entityId=' + valId + '">'
+                                        //             html += val + '</a> '
+                                        //             isHref = true
+                                        //
+                                        //         } else {
+                                        //             html += val
+                                        //         }
+                                        //
+                                        //     }
+                                        //     html += '</td>'
                                     }
+
+
                                     i++
 
 
                                 }
+                                //dtTable.push('')
+
+
+                                dataTable.push(dtTable)
                                 counter++
-
-                                html += '<td width="32px"><i class="bi-trash text-danger" style="cursor: pointer"' +
-                                    ' onclick="deleteTask(' + valId + ',' + id + ')"></i></td>'
-                                html += '</tr>'
-                            }
-
-
-                        }
-                        table.innerHTML = html
-                        // if (!isRender) {
-
-
-                        $('#json_data').DataTable({
-                            language: {
-                                url: '/static/ru.json',
-                            },
-                            sPaging: false,
-                            pagingType: "simple",
-                            "bLengthChange": false,
-                            "processing": true,
-                            'sDom': 't',
-                            scrollY: 700,
-                            scroller: true,
-                        })
-                        $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
-
-                            if (arrFind.length === 0) return true
-                            let isOk = false
-
-                            // for (let i = 0; i <= arrFind.length ; i++) {
-                            //     // console.log(arrFind[i].id)
-                            // }
-                            for (const item of arrFind) {
-
-                                switch (item.type) {
-                                    case 'text': {
-                                        //console.log(data[item.id])
-                                        if (data[item.id - 1].toUpperCase().startsWith(item.val.toUpperCase())) {
-                                            isOk = true
-                                        } else {
-                                            return false
-                                        }
-                                        break
-                                    }
-                                    case 'date': {
-                                        let val = new Date(item.val).toLocaleDateString();
-                                        if (val == data[item.id - 1]) {
-                                            isOk = true
-                                        } else {
-                                            return false
-                                        }
-                                        break
-                                    }
-                                    default : {
-                                        if (item.val == data[item.id - 1]) {
-                                            isOk = true
-                                        } else {
-                                            return false
-                                        }
-                                    }
+                                // jsonData = {
+                                //     "data": obj
+                                // }
+                                jsonData = {
+                                    "data": obj
                                 }
-
+                                // html += '<td width="32px"><i class="bi-trash text-danger" style="cursor: pointer"' +
+                                //     ' onclick="deleteTask(' + valId + ',' + id + ')"></i></td>'
+                                // html += '</tr>'
                             }
-                            return isOk
 
-                        });
-                        // } else {
-                        //     table.draw()
-                        // }
-                        isRender = true
-                        $('input,select,textarea').attr("autocomplete", "off");
+                            // dataTable= obj
+                            //  console.log(jsonData)
+                            console.log(columns)
+                            table.innerHTML = html
+                            // if (!isRender) {
 
+
+                            $('#json_data').DataTable({
+                                language: {
+                                    url: '/static/ru.json',
+                                },
+                                data: jsonData.data,
+                                // columns: [
+                                //     // {data: 'id', width: "40px"},
+                                //     {data: 'name', width: "40px"},
+                                // ],
+                                columns: columns,
+
+                                sPaging: false,
+                                pagingType: "simple",
+                                "bLengthChange": false,
+                                "processing": true,
+                                'sDom': 't',
+                                scrollY: 700,
+                                scroller: true,
+                            })
+
+
+                            $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+
+                                if (arrFind.length === 0) return true
+                                let isOk = false
+
+                                // for (let i = 0; i <= arrFind.length ; i++) {
+                                //     // console.log(arrFind[i].id)
+                                // }
+                                for (const item of arrFind) {
+
+                                    switch (item.type) {
+                                        case 'text': {
+                                            //console.log(data[item.id])
+                                            if (data[item.id - 1].toUpperCase().startsWith(item.val.toUpperCase())) {
+                                                isOk = true
+                                            } else {
+                                                return false
+                                            }
+                                            break
+                                        }
+                                        case 'date': {
+                                            let val = new Date(item.val).toLocaleDateString();
+                                            if (val == data[item.id - 1]) {
+                                                isOk = true
+                                            } else {
+                                                return false
+                                            }
+                                            break
+                                        }
+                                        default : {
+                                            if (item.val == data[item.id - 1]) {
+                                                isOk = true
+                                            } else {
+                                                return false
+                                            }
+                                        }
+                                    }
+
+                                }
+                                return isOk
+
+                            });
+                            // } else {
+                            //     table.draw()
+                            // }
+                            isRender = true
+                            $('input,select,textarea').attr("autocomplete", "off");
+                        } else {
+                            document.location = '/'
+                        }
                     })
 
 
@@ -308,12 +366,11 @@
                 let
             catalogId = id
             renderTable()
-            $(document).ready(function (e){
+            $(document).ready(function (e) {
 
                 $('#buttonClear').hide()
 
             })
-
         </script>
     </main>
 {{end}}

@@ -32,6 +32,7 @@ func main() {
 	mux.HandleFunc("/main", route.DoLogin)
 
 	mux.HandleFunc("/test", Test)
+	mux.HandleFunc("/test2", Test2)
 	mux.HandleFunc("/api/test/", GetTestDataForLocal)
 	//*********Каталог****************////////////////
 	//*********Задачи***//
@@ -108,6 +109,7 @@ func Home(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Первая страничка!")
 }
 func Test(w http.ResponseWriter, r *http.Request) {
+
 	files := []string{
 		"./ui/html/test.page.tmpl",
 		"./ui/html/base.layout.tmpl",
@@ -123,6 +125,21 @@ func Test(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tpl.Execute(w, nil)
+}
+func Test2(w http.ResponseWriter, r *http.Request) {
+	user := session.GetSessionData(r)
+	db, _ := database.GetDb(user.ConnString)
+	defer db.Close()
+
+	for i := 0; i < 100000; i++ {
+		query := `insert into test2 (name) values ('test` + strconv.Itoa(i+1) + `')`
+
+		_, err := db.Exec(query)
+		if err != nil {
+			log.Println(err.Error())
+		}
+	}
+
 }
 func GetTestData(w http.ResponseWriter, r *http.Request) {
 	keys := r.URL.Query()
