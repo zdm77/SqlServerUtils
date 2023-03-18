@@ -59,7 +59,11 @@ func GetCatalogWorkListByIdJson(user *model.User, id int, isJSONParse bool) (err
 	var whereAccess []string
 	//типы
 	for _, cat := range catalog.Fields {
-		types = append(types, cat.NameType)
+		if cat.IsForeignField {
+			types = append(types, "varchar")
+		} else {
+			types = append(types, cat.NameType)
+		}
 	}
 	if user.SuperAdmin != user.Login {
 		//ищем списки для проверки прав
@@ -104,8 +108,9 @@ func GetCatalogWorkListByIdJson(user *model.User, id int, isJSONParse bool) (err
 		if cat.IsPrimaryKey {
 			fieldId = cat.NameDb
 		} else {
-			fieldNames = append(fieldNames, cat.NameDb)
+
 		}
+		fieldNames = append(fieldNames, cat.NameDb)
 		if cat.IsIdentity || cat.Name != "" || !cat.IsNullable || !cat.IsNullableDb {
 			if cat.LinkTableId != 0 {
 				_, table := GetTableLinkById(user, cat.LinkTableId)
@@ -125,8 +130,10 @@ func GetCatalogWorkListByIdJson(user *model.User, id int, isJSONParse bool) (err
 
 		}
 	}
-
+	headers = append(headers, "")
+	fieldNames = append(fieldNames, "is_delete")
 	fields = append(fields, "'' is_delete")
+	types = append(types, "")
 	query += strings.Join(fields, ",") + " from " + catalog.TableName
 	query += joinTables
 	if user.SuperAdmin != user.Login {

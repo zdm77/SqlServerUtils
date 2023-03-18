@@ -38,8 +38,6 @@
 
             let arrFind = []
             let headers = []
-            let dataTable = []
-            let columns = []
 
             function clearFind() {
 
@@ -58,13 +56,7 @@
 
             function find(el) {
                 arrFind = []
-                // console.log(el)
-                // arrFind.push({
-                //     id: -1,
-                //     type: '',
-                //     val: '',
-                // })
-                for (let i = 1; i < headers.length; i++) {
+                for (let i = 0; i < headers.length; i++) {
 
                     el = $('#find' + i)
 
@@ -91,6 +83,9 @@
             }
 
             function renderTable() {
+                headers = []
+
+                let columns = []
                 let liTable = document.getElementById("li-table")
                 liTable.innerHTML = '  <table id="json_data"  class="table table-striped table-bordered table-sm table-responsive"></table>'
                 let table = document.getElementById("json_data");
@@ -98,6 +93,7 @@
                 table.innerHTML = ''
 
                 let html = ''
+
                 fetch('/api/catalog-work-list',
                     {
                         method: 'POST',
@@ -112,152 +108,122 @@
                     .then(response => response.json())
                     .then((response) => {
                         if (response.text != 'not-login') {
-                             console.log(response)
+
+                            console.log(response)
                             const obj = JSON.parse(response.json);
 
                             headers = response.headers
                             document.getElementById('cardHeader').innerText = response.name_catalog
                             id = response.catalog_id
                             const fieldId = response.field_id
-                            let fieldIdIdx = -1
 
                             html += '<thead>'
-
-
                             //поиск
                             html += '<tr>'
-                            for (let i = 1; i < response.headers.length; i++) {
-
-                                switch (response.types[i]) {
-                                    case 'date': {
-                                        html += '<td><input id="find' + i + '" type="date" class="form-control" onchange="find(this)"/></td>'
-                                        break
+                            for (let i = 0; i < response.headers.length; i++) {
+                                if (response.field_names[i] !== 'is_delete') {
+                                    switch (response.types[i]) {
+                                        case 'date': {
+                                            html += '<td><input id="find' + i + '" type="date" class="form-control" onchange="find(this)"/></td>'
+                                            break
+                                        }
+                                        case 'bit': {
+                                            html += '<td><select type="bit" id="find' + i + '"  class="form-select"  onchange="find(this)"">'
+                                            html += '<option value=""></option>'
+                                            html += '<option value="1">Да</option>'
+                                            html += '<option value="0">Нет</option>'
+                                            html += '</select></td>'
+                                            break
+                                        }
+                                        default: {
+                                            html += '<td><input id="find' + i + '" type="text" class="form-control" onkeyup="find(this)"/></td>'
+                                            break
+                                        }
                                     }
-                                    default: {
-                                        html += '<td><input id="find' + i + '" type="text" class="form-control" onkeyup="find(this)"/></td>'
-                                        break
-                                    }
+                                } else {
+                                    html += '<td></td>'
                                 }
                             }
-                            html += '<td></td>'
+                            // html += '<td></td>'
                             html += '</tr>'
                             //заголовки
                             html += '<tr>'
                             let isHref = false
                             for (let i = 0; i < response.headers.length; i++) {
-                                if (response.field_names[i]) {
-                                    if (!isHref) {
-                                        const valId = response.values_id[i]
+                                let header = response.headers[i]
+                                html += '<th>' + header + '</th>'
+                                let fieldName = response.field_names[i]
+                                if (fieldName && fieldName !== 'is_delete') {
+                                    if (fieldName === fieldId) {
                                         columns.push({
-                                            data: response.field_names[i],
-                                            render: function (data, type, row, meta) {
-                                                if (type === 'display') {
-                                                    data = '<a href="/catalog-work-edit/?id=' + id + '&entityId=' + row["id"] + '">' + data + '</a>'
-                                                }
-
-                                                return data;
-                                            }
+                                            visible: false,
+                                            data: fieldName,
                                         })
-                                        isHref = true
+
                                     } else {
-                                        columns.push({ data: response.field_names[i],})
+                                        if (!isHref) {
+                                            columns.push({
+                                                data: fieldName,
+                                                render: function (data, type, row, meta) {
+                                                    if (type === 'display') {
+                                                        data = '<a href="/catalog-work-edit/?id=' + id + '&entityId=' + row[fieldId] + '">' + data + '</a>'
+                                                    }
+                                                    return data;
+                                                }
+                                            })
+                                            isHref = true
+
+                                        } else {
+                                            let typeCell = response.types[i]
+                                            columns.push({
+                                                className: typeCell === 'date' ? "text-center" : "",
+                                                data: fieldName,
+                                                render: function (data, type, row, meta) {
+                                                    switch (typeCell) {
+                                                        case 'date': {
+                                                            if (data === '') return data
+                                                            let date = new Date(data)
+                                                            return date.toLocaleDateString()
+                                                        }
+                                                        case 'bit': {
+                                                            if (data && data == 1) {
+                                                                data = '<i  class="bi bi-check2" style="font-size: 25px"></i>'
+                                                            } else {
+                                                                data = ''
+                                                            }
+                                                        }
+                                                    }
+
+                                                    return data;
+                                                }
+                                            })
+                                        }
                                     }
-                                }
-                                const val = response.headers[i]
-                                if (val === fieldId) {
-                                    fieldIdIdx = i
-                                } else {
-                                    if (response.is_list[i])
-                                        html += '<th>' + val + '</th> '
                                 }
                             }
                             columns.push({
+                                bSortable: false,
+                                width: '40px',
                                 data: "is_delete",
+                                className: "text-center",
                                 render: function (data, type, row, meta) {
-                                    return  '<i class="bi-trash text-danger" style="cursor: pointer"' +
-                                        ' onclick="deleteTask(' + row["id"]  + ',' + id + ')"></i>'
+                                    return '<i class="bi-trash text-danger" style="cursor: pointer"' +
+                                        ' onclick="deleteTask(' + row["id"] + ',' + id + ')"></i>'
 
 
                                 }
                             })
-                            html += '<th>Дейсвие</th>'
+                            // html += '<th></th>'
                             html += '</tr>'
 
 
                             html += '</thead>'
 
-
-                            let counter = 0
-                            for (str in obj) {
-
-                                let dtTable = []
-                                let column = []
-                                // html += '<tr>'
-                                let row = obj[str]
-
-                                let isHref = false
-                                let valId = 0
-                                valId = response.values_id[counter]
-                                let i = 0
-                                dtTable.push(row)
-                                for (key in row) {
-
-                                    let val = row[key]
-                                    if (response.types[i] === 'date' && val !== '') {
-                                        let date = new Date(val)
-                                        val = date.toLocaleDateString()
-                                    }
-
-                                    if (response.headers[i] != response.field_id) {
-                                        // dtTable.push({
-                                        //     "name": val
-                                        // })
-
-                                        //     html += '<td>'
-                                        //     if (val === 'unchecked') {
-                                        //         val = ''
-                                        //     }
-                                        //     if (val === 'checked') {
-                                        //         html += '<i class="bi bi-check2" style="font-size: 25px"></i>'
-                                        //     } else {
-                                        //         if (!isHref) {
-                                        //
-                                        //             html += '<a href="/catalog-work-edit/?id=' + id + '&entityId=' + valId + '">'
-                                        //             html += val + '</a> '
-                                        //             isHref = true
-                                        //
-                                        //         } else {
-                                        //             html += val
-                                        //         }
-                                        //
-                                        //     }
-                                        //     html += '</td>'
-                                    }
-
-
-                                    i++
-
-
-                                }
-                                //dtTable.push('')
-
-
-                                dataTable.push(dtTable)
-                                counter++
-                                // jsonData = {
-                                //     "data": obj
-                                // }
-                                jsonData = {
-                                    "data": obj
-                                }
-                                // html += '<td width="32px"><i class="bi-trash text-danger" style="cursor: pointer"' +
-                                //     ' onclick="deleteTask(' + valId + ',' + id + ')"></i></td>'
-                                // html += '</tr>'
+                            jsonData = {
+                                "data": obj
                             }
 
-                            // dataTable= obj
-                            //  console.log(jsonData)
-                            console.log(columns)
+
                             table.innerHTML = html
                             // if (!isRender) {
 
@@ -267,16 +233,12 @@
                                     url: '/static/ru.json',
                                 },
                                 data: jsonData.data,
-                                // columns: [
-                                //     // {data: 'id', width: "40px"},
-                                //     {data: 'name', width: "40px"},
-                                // ],
                                 columns: columns,
-
+                                headers: html,
                                 sPaging: false,
                                 pagingType: "simple",
                                 "bLengthChange": false,
-                                "processing": true,
+                                processing: true,
                                 'sDom': 't',
                                 scrollY: 700,
                                 scroller: true,
@@ -288,15 +250,12 @@
                                 if (arrFind.length === 0) return true
                                 let isOk = false
 
-                                // for (let i = 0; i <= arrFind.length ; i++) {
-                                //     // console.log(arrFind[i].id)
-                                // }
                                 for (const item of arrFind) {
 
                                     switch (item.type) {
                                         case 'text': {
                                             //console.log(data[item.id])
-                                            if (data[item.id - 1].toUpperCase().startsWith(item.val.toUpperCase())) {
+                                            if (data[item.id].toUpperCase().startsWith(item.val.toUpperCase())) {
                                                 isOk = true
                                             } else {
                                                 return false
@@ -305,15 +264,22 @@
                                         }
                                         case 'date': {
                                             let val = new Date(item.val).toLocaleDateString();
-                                            if (val == data[item.id - 1]) {
+                                            if (val == data[item.id]) {
                                                 isOk = true
                                             } else {
                                                 return false
                                             }
                                             break
                                         }
+                                        case 'bit': {
+
+                                            console.log(data)
+                                         //   console.log(item.val)
+
+                                            break
+                                        }
                                         default : {
-                                            if (item.val == data[item.id - 1]) {
+                                            if (item.val == data[item.id]) {
                                                 isOk = true
                                             } else {
                                                 return false
