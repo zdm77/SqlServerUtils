@@ -86,7 +86,7 @@
 
             function valid() {
                 if (isNaN(strHeader.value)) {
-                    alert('Недопустимое значение. Введите число.')
+                    showError('Недопустимое значение. Введите число.')
                     selectFile.disabled = true
                     btnSave.disabled = true
                 } else {
@@ -127,7 +127,8 @@
                     .then((response) => {
 
                         if (response.text && response.text !== "") {
-                            alert(response.text)
+                            showError(response.text)
+
                             return
                         }
                         let htmlData = ''
@@ -262,18 +263,19 @@
                                     .then(response => response.json())
                                     .then((response) => {
                                         if (response.text == "ok") {
+                                            showMessage()
 
-                                            alert("Данные сохранены")
                                         } else {
-                                            alert("Ошибка: " + response.text)
+                                            showError(response.text)
+
                                         }
                                     });
                                 // alert("Данные сохранены")
                             } else {
-                                alert("Данные сохранены")
+                                showMessage()
                             }
                         } else {
-                            alert("Ошибка: " + response.text)
+                            showError(response.text)
                         }
                     });
             }

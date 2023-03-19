@@ -90,8 +90,8 @@
         </div>
         <style>
             th {
-                text-align: center;
-                vertical-align: middle;
+                text-align: center !important;
+                vertical-align: middle !important;
                 background-color: #D3D3D3 !important;
                 /*color: white!important;*/
             }
@@ -180,7 +180,7 @@
                             //     })
                             //getFieldsByCatalogId(nameField.value, typeField.value)
                         } else {
-                            alert(response)
+                            showError(response)
                         }
                     })
 
@@ -385,13 +385,13 @@
                 html += '<thead>'
                 html += '<tr>'
 
-                html += '<th rowspan="2" >Поле</th>'
-                html += '<th rowspan="2" >Наименование</th>'
+                html += '<th rowspan="2" width="100px" >Поле</th>'
+                html += '<th rowspan="2" width="200px">Наименование</th>'
                 html += '<th width="60px" rowspan="2" >Обяза-<br/>тельное</th>'
                 html += '<th width="60px" rowspan="2" >Проверка<br/>доступа</th>'
                 html += '<th width="60px" colspan="2" >Отображение</th>'
-                html += '<th rowspan="2" >Список</th>'
-                html += '<th rowspan="2" >Тип</th>'
+                html += '<th rowspan="2" width="200px" >Список</th>'
+                html += '<th rowspan="2" width="40px" >Тип</th>'
                 html += '<th colspan="2" >Пользователь</th>'
                 html += '<th colspan="2">Дата</th>'
 
@@ -400,18 +400,18 @@
 //////////////////
 
                 html += '<tr>'
-                html += '<th>В списке</th>'
-                html += '<th>В форме</th>'
-                html += '<th>Создал</th>'
-                html += '<th>Изменил</th>'
-                html += '<th>Создания</th>'
-                html += '<th>Изменения</th>'
+                html += '<th width="40px!important">В списке</th>'
+                html += '<th  width="40px!important">В форме</th>'
+                html += '<th  width="40px!important">Создал</th>'
+                html += '<th  width="40px!important">Изменил</th>'
+                html += '<th  width="40px!important">Создания</th>'
+                html += '<th  width="40px!important">Изменения</th>'
                 html += '<th>В списке</th>'
                 html += '<th>В форме</th>'
 
                 html += '</tr>'
                 html += '</thead>'
-                html +='<tbody>'
+                html += '<tbody>'
                 fields.map(function (item) {
 
 
@@ -419,7 +419,7 @@
                         '<td>' + item.name_db + '</td>'
                     html += '<td><input onkeyup="changeNameField(' + counter + ')"  class="form-control" id=valName' + counter + ' value="' + item.name + '"'
                     if (item.is_identity) html += ' disabled '
-                    html += '><div hidden>'+item.name+'</div> </td>'
+                    html += '><div hidden>' + item.name + '</div> </td>'
                     html += '<td style="text-align: center">'
 
                     if (item.is_nullable_db) {
@@ -459,7 +459,7 @@
                     if (!item.name) {
                         html += ' disabled '
                     }
-                    html += '></div>'
+                    html += '><div hidden>' + item.is_list + '</div></div>'
 
                     html += '</td>'
                     ////////
@@ -477,7 +477,7 @@
                     if (!item.name) {
                         html += ' disabled '
                     }
-                    html += '></div>'
+                    html += '><div hidden>' + item.is_form + '</div></div>'
 
                     html += '</td>'
                     //////////////
@@ -543,19 +543,24 @@
                     //html += item.is_identity ? '<td  style="text-align: center"><i class="bi bi-check2"></i> </td>' : '<td></td>';
 ///порядок
                     html += '<td width="40px"><input class="form-control"  type="number" id=valOrder' + counter + ' value="' + item.order_by + '">' +
-                        '<div hidden>'+item.order_by+'</div></td>'
+                        '<div hidden>' + item.order_by + '</div></td>'
                     html += '<td width="40px"><input class="form-control"  type="number" id=valOrderForm' + counter + ' value="' + item.order_by_form + '">' +
-                        '<div hidden>'+item.order_by_form+'</div></td>'
+                        '<div hidden>' + item.order_by_form + '</div></td>'
 
                     html += '</tr>'
                     counter++
 
                 })
-                html +='</tbody>'
+                html += '</tbody>'
                 table.innerHTML = html
                 $('#json_data').DataTable({
+                    autoWidth: true,
+                    "columnDefs": [{
+                        "targets": [2, 3, 6, 7, 8, 9, 10, 11],
+                        "orderable": false
+                    }],
                     'sDom': 't',
-                   // aaSorting: [5]
+                    // aaSorting: [5]
                 })
             }
 
@@ -664,8 +669,8 @@
                                 for (field of fields) {
 
                                     if (!field.is_nullable_db && field.name === '' && !field.is_identity) {
-
-                                        alert('Введите наименование для обязательных полей')
+                                        showError('Введите наименование для обязательных полей')
+                                        //alert('Введите наименование для обязательных полей')
                                         return
                                     }
                                 }
@@ -675,8 +680,8 @@
                                 for (field of fields) {
 
                                     if (!field.is_nullable_db && field.name === '' && !field.is_identity) {
-
-                                        alert('Введите наименование для обязательных полей')
+                                        showError('Введите наименование для обязательных полей')
+                                        //alert('Введите наименование для обязательных полей')
                                         return
                                     }
                                 }
@@ -691,20 +696,25 @@
                                     })
                                     .then(response => response.json())
                                     .then((response) => {
-                                        window.location.reload();
+
                                         if (!isNewField)
-                                            alert('Данные сохранены')
+                                            showMessage()
+                                        window.location.reload();
                                     })
                             }
 
 
                         } else {
-                            alert("Ошибка: " + response.text)
+                            showError(response.text)
+                            // alert("Ошибка: " + response.text)
                         }
                     })
 
             }
 
+            $(document).ready(function (e) {
+
+            })
             {{/*console.log({{ .Fields}})*/}}
             let id = {{ .Id}}
                 let

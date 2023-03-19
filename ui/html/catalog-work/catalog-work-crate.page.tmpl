@@ -110,7 +110,7 @@
                     })
                     .then(response => response.json())
                     .then((response) => {
-                        alert('Доступ сохранен')
+                        showMessage('Доступ сохранен')
                     })
             }
 
@@ -277,7 +277,7 @@
 
                         if (!elem.value) {
                             if (elem.type !== 'checkbox') {
-                                alert('Заполните обязательные поля')
+                                showError('Заполните обязательные поля')
                                 return
                             }
                         }
@@ -327,10 +327,10 @@
 
 
                             }
-                            alert('Данные сохранены')
+                            showMessage()
 
                         } else {
-                            alert("Ошибка: " + response.text)
+                            showError(response.text)
                         }
                     })
 

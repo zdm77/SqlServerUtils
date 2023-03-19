@@ -42,8 +42,8 @@
                 <li class="list-group-item">
                     <div class="row">
                         <div class="col-4">
-{{/*                            <button id="btnUpload" class="btn btn-primary" onclick="uploadToServ()">1. Загрузить*/}}
-{{/*                            </button>*/}}
+                            {{/*                            <button id="btnUpload" class="btn btn-primary" onclick="uploadToServ()">1. Загрузить*/}}
+                            {{/*                            </button>*/}}
                             <button id="btnExe" class="btn btn-primary" onclick="taskExe()">Выполнить</button>
                         </div>
                     </div>
@@ -61,10 +61,9 @@
             </ul>
         </div>
         <script>
-
             //let btnUpload = document.getElementById('btnUpload')
             let btnExe = document.getElementById('btnExe')
-          //  btnUpload.disabled = true
+            //  btnUpload.disabled = true
             btnExe.disabled = true
             let task = {}
             let tasks = []
@@ -101,9 +100,9 @@
                     .then(response => response.json())
                     .then((response) => {
                         if (response.text === 'ok') {
-                            alert('Задача создана')
+                            showMessage('Задача создана')
                         } else {
-                            alert('Ошибка: ' + response.text)
+                            showError(response.text)
                         }
 
                     });
@@ -199,7 +198,6 @@
                     });
 
             }
-
         </script>
     </main>
 

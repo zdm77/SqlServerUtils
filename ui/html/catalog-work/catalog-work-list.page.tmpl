@@ -180,10 +180,10 @@
                             if (response.text !== 'not-login') {
                                 if (response.text === 'ok') {
                                     renderTable()
-                                    alert('Данные удалены')
+                                    showMessage('Данные удалены')
 
                                 } else {
-                                    alert(response.text)
+                                    showError(response.text)
                                 }
                             } else {
                                 document.location = '/'
