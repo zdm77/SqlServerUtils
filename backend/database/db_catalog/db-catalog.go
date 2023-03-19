@@ -144,7 +144,7 @@ func GetCatalogById(user *model.User, id int, forForm bool) (r model.Catalog) {
 
 	stmt, err := db.Prepare(query)
 	row := stmt.QueryRow(sql.Named("Id", id))
-
+	countFields := 0
 	err = row.Scan(&r.Id, &r.Name, &r.TableName, &r.TypeEntity)
 	if err != nil {
 		log.Println(err.Error())
@@ -153,19 +153,23 @@ func GetCatalogById(user *model.User, id int, forForm bool) (r model.Catalog) {
 	//табличная часть
 	query = `select id, name, catalog_id, name_db, name_type, max_length, precision, scale, is_nullable, is_identity, 
        is_primary_key, is_nullable_db, is_list, is_form, link_table_id, is_user_create, is_user_modify, is_date_create, 
-    is_date_modify, is_access_check , is_foreign_field
+    is_date_modify, is_access_check , is_foreign_field, coalesce(order_by, 0) order_by , coalesce(order_by_form, 0) order_by_form
 			from utills_catalog_fields where catalog_id=` + strconv.Itoa(id)
 	if forForm {
-		query += ` and is_form=1 `
+		query += ` and is_form=1 order by order_by_form`
+	} else {
+		query += ` order by order_by`
 	}
 	rows, err := db.Query(query)
 	defer rows.Close()
 	var names []string
 	for rows.Next() {
+		countFields++
 		var f model.Field
 		err = rows.Scan(&f.Id, &f.Name, &f.CatalogId, &f.NameDb, &f.NameType, &f.MaxLength, &f.Precision, &f.Scale,
 			&f.IsNullable, &f.IsIdentity, &f.IsPrimaryKey, &f.IsNullableDb, &f.IsList, &f.IsForm, &f.LinkTableId,
-			&f.IsUserCreate, &f.IsUserModify, &f.IsDateCreate, &f.IsDateModify, &f.IsAccessCheck, &f.IsForeignField)
+			&f.IsUserCreate, &f.IsUserModify, &f.IsDateCreate, &f.IsDateModify, &f.IsAccessCheck, &f.IsForeignField,
+			&f.OrderBy, &f.OrderByForm)
 
 		name := f.Name
 		isNullDb := f.IsNullableDb
@@ -181,6 +185,8 @@ func GetCatalogById(user *model.User, id int, forForm bool) (r model.Catalog) {
 		isDateModify := f.IsDateModify
 		isAccessCheck := f.IsAccessCheck
 		isForeignField := f.IsForeignField
+		orderBy := f.OrderBy
+		orderByForm := f.OrderByForm
 		for _, field := range fieldsDb {
 			if field.NameDb == f.NameDb {
 				f = field
@@ -200,6 +206,8 @@ func GetCatalogById(user *model.User, id int, forForm bool) (r model.Catalog) {
 				f.IsDateModify = isDateModify
 				f.IsAccessCheck = isAccessCheck
 				f.IsForeignField = isForeignField
+				f.OrderBy = orderBy
+				f.OrderByForm = orderByForm
 
 			}
 		}
@@ -207,14 +215,18 @@ func GetCatalogById(user *model.User, id int, forForm bool) (r model.Catalog) {
 		names = append(names, f.NameDb)
 	}
 	//если появились новые поля
+
 	if !forForm {
 		for _, field := range fieldsDb {
 			isNew := implContains(names, field.NameDb)
 			if isNew == -1 {
+				countFields++
 				var newId int
 				var stmt *sql.Stmt
-				query = `insert into utills_catalog_fields (name, catalog_id, name_db, name_type, max_length, precision, scale, is_nullable, is_identity, is_primary_key, is_nullable_db) values
-					(@name, @catalog_id, @name_db, @name_type, @max_length, @precision, @scale, @is_nullable, @is_identity, @is_primary_key, @is_nullable_db);  SELECT SCOPE_IDENTITY()`
+				query = `insert into utills_catalog_fields (name, catalog_id, name_db, name_type, max_length, precision,
+                                   scale, is_nullable, is_identity, is_primary_key, is_nullable_db, order_by, order_by_form) values
+					(@name, @catalog_id, @name_db, @name_type, @max_length, @precision, @scale, @is_nullable, 
+					 @is_identity, @is_primary_key, @is_nullable_db, @order_by, @order_by_form);  SELECT SCOPE_IDENTITY()`
 				stmt, _ = db.Prepare(query)
 				err = stmt.QueryRow(
 					sql.Named("name", field.Name),
@@ -228,6 +240,8 @@ func GetCatalogById(user *model.User, id int, forForm bool) (r model.Catalog) {
 					sql.Named("is_identity", field.IsIdentity),
 					sql.Named("is_primary_key", field.IsPrimaryKey),
 					sql.Named("is_nullable_db", field.IsNullableDb),
+					sql.Named("order_by", countFields),
+					sql.Named("order_by_form", countFields),
 				).Scan(&newId)
 				field.Id = newId
 				r.Fields = append(r.Fields, field)
@@ -266,17 +280,19 @@ func SaveCatalogFields(user *model.User, fields []model.Field) (err error) {
 	//if isNew == 0 {
 	queryIns = `insert into utills_catalog_fields (name, catalog_id, name_db, name_type, max_length, precision, scale,
                                    is_nullable, is_identity, is_primary_key, is_nullable_db, is_list, is_form, link_table_id
-                                   , is_user_create, is_user_modify, is_date_create, is_date_modify, is_access_check, is_foreign_field ) values
+                                   , is_user_create, is_user_modify, is_date_create, is_date_modify, is_access_check,
+                                   is_foreign_field, order_by, order_by_form ) values
 					(@name, @catalog_id, @name_db, @name_type, @max_length, @precision, @scale, @is_nullable, @is_identity, 
 					 @is_primary_key, @is_nullable_db, @is_list, @is_form, @link_table_id,  @is_user_create,  @is_user_modify,
-					 @is_date_create,  @is_date_modify, @is_access_check, @is_foreign_field )`
+					 @is_date_create,  @is_date_modify, @is_access_check, @is_foreign_field, @order_by, @order_by_form )`
 	//} else {
 	queryUpd = `update utills_catalog_fields set name=@name, catalog_id=@catalog_id, name_db= @name_db, name_type = @name_type,
 	max_length = @max_length, precision = @precision, scale = @scale, is_nullable = @is_nullable ,
 	is_identity = @is_identity,  is_nullable_db=@is_nullable_db, is_primary_key = @is_primary_key,
 	is_list = @is_list, is_form = @is_form, link_table_id = @link_table_id,
 	is_user_create = @is_user_create, is_user_modify = @is_user_modify, is_date_create = @is_date_create,
-	is_date_modify = @is_date_modify, is_access_check = @is_access_check, is_foreign_field=@is_foreign_field
+	is_date_modify = @is_date_modify, is_access_check = @is_access_check, is_foreign_field=@is_foreign_field,
+	order_by=@order_by, order_by_form=@order_by_form
 	where id=@id`
 	//}
 
@@ -309,6 +325,8 @@ func SaveCatalogFields(user *model.User, fields []model.Field) (err error) {
 			sql.Named("is_date_modify", field.IsDateModify),
 			sql.Named("is_access_check", field.IsAccessCheck),
 			sql.Named("is_foreign_field", field.IsForeignField),
+			sql.Named("order_by", field.OrderBy),
+			sql.Named("order_by_form", field.OrderByForm),
 		)
 		if err != nil {
 			log.Println(err.Error())

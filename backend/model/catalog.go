@@ -34,6 +34,8 @@ type Field struct {
 	TableName      string `json:"table_name"`
 	IsAccessCheck  bool   `json:"is_access_check"`
 	IsForeignField bool   `json:"is_foreign_field"`
+	OrderBy        int    `json:"order_by"`
+	OrderByForm    int    `json:"order_by_form"`
 }
 type LinkTable struct {
 	Id     int    `json:"id"`

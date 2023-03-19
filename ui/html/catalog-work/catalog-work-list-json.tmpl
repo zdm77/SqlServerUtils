@@ -112,9 +112,9 @@
                     .then(response => response.json())
                     .then((response) => {
                         if (response.text != 'not-login') {
-
-                            console.log(response)
-                            const obj = JSON.parse(response.json);
+                            jsonData = {
+                                "data":  JSON.parse(response.json),
+                            }
                             fieldNames = response.field_names
                             headers = response.headers
                             document.getElementById('cardHeader').innerText = response.name_catalog
@@ -148,7 +148,6 @@
                                     html += '<td></td>'
                                 }
                             }
-                            // html += '<td></td>'
                             html += '</tr>'
                             //заголовки
                             html += '<tr>'
@@ -223,30 +222,16 @@
 
                                 }
                             })
-                            // html += '<th></th>'
                             html += '</tr>'
-
-
                             html += '</thead>'
 
-                            jsonData = {
-                                "data": obj
-                            }
-
-
                             table.innerHTML = html
-                            // if (!isRender) {
-
-
                             $('#json_data').DataTable({
                                 language: {
                                     url: '/static/ru.json',
                                 },
                                 data: jsonData.data,
                                 columns: columns,
-                                // "columnDefs": [
-                                //     { "type": "html", "targets": 4 }
-                                // ],
                                 headers: html,
                                 sPaging: false,
                                 pagingType: "simple",
@@ -255,9 +240,8 @@
                                 'sDom': 't',
                                 scrollY: 700,
                                 scroller: true,
+                                aaSorting: []
                             })
-
-
                             $.fn.dataTable.ext.search.push(function (settings, data, index, rowData, counter) {
 
                                 if (arrFind.length === 0) return true
@@ -284,22 +268,6 @@
                                             }
                                             break
                                         }
-                                        // case 'bit': {
-                                        //
-                                        //     // const elId = '#check_' + item.fieldName + rowData[fieldId]
-                                        //     //
-                                        //     // const isCheck = $(elId).text()
-                                        //     //
-                                        //     // console.log('check', item.val, isCheck)
-                                        //     if (item.val == isCheck) {
-                                        //         isOk = true
-                                        //     } else {
-                                        //         return false
-                                        //     }
-                                        //     //   console.log(item.val)
-                                        //
-                                        //     break
-                                        // }
                                         default : {
                                             if (item.val == data[item.id]) {
                                                 isOk = true
@@ -313,10 +281,8 @@
                                 return isOk
 
                             });
-                            // } else {
-                            //     table.draw()
-                            // }
-                            isRender = true
+
+
                             $('input,select,textarea').attr("autocomplete", "off");
                         } else {
                             document.location = '/'

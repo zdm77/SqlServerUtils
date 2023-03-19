@@ -38,3 +38,11 @@ alter table utills_catalog_fields
 go
 
 update utills_catalog_fields set is_foreign_field=0 where 1=1;
+
+alter table utills_catalog_fields
+    add order_by int
+go
+
+alter table utills_catalog_fields
+    add order_by_form int
+go
