@@ -564,7 +564,7 @@
                     strEdit += '"' + item.is_foreign_field + '"'
 
                     html += '<tr>' +
-                        '<td style="cursor: pointer" ><div onclick=editField(' + strEdit + ')>' + item.name_db + '</div> </td>'
+                        '<td style="cursor: pointer" ><button class="btn btn-link" onclick=editField(' + strEdit + ')>' + item.name_db + '</button> </td>'
                     html += '<td><input onkeyup="changeNameField(' + counter + ')"  class="form-control" id=valName' + counter + ' value="' + item.name + '"'
                     if (item.is_identity) html += ' disabled '
                     html += '><div hidden>' + item.name + '</div> </td>'
