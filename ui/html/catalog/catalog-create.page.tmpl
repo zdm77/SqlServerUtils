@@ -19,6 +19,17 @@
                                 <label for="table_name" class="form-label">Таблица БД</label>
                                 <input class="form-control" id="table_name" value={{ .TableName}}>
                             </div>
+                            <div class="col-3">
+                                <label for="" class="form-label">Сортировка по</label>
+                                <select id="order_by_default" class="form-select">'
+                                </select>
+                            </div>
+                            <div class="col-3">
+                                <select style="margin-top: 30px" id="order_by_default_asc" class="form-select">'
+                                    <option value="asc">Прямая</option>
+                                    <option value="desc">Обратная</option>
+                                </select>
+                            </div>
                         </div>
                     </li>
                 </ul>
@@ -121,6 +132,8 @@
             const table = document.getElementById('json_data')
             let fields = {{ .Fields}}
             if (fields && fields.length > 0) renderTable()
+            const orderByDefault = document.getElementById('order_by_default')
+            const orderByDefaultAsc = document.getElementById('order_by_default_asc')
 
             function saveField() {
                 let nameField = document.getElementById('field_name')
@@ -567,8 +580,9 @@
             getListForDropdown()
 
             function getListForDropdown() {
-                let list = []
 
+                let list = []
+                let htmlOrderBy = ''
                 fetch('/api/catalog-list/?id=Справочники',
                     {
                         method: 'POST',
@@ -585,11 +599,13 @@
                             })
                             if (fields && fields.length) {
                                 for (let i = 0; i < fields.length; i++) {
+
+
                                     let htmlD = ''
                                     let selectedId = 0
                                     let el = document.getElementById('linkId' + i)
                                     htmlD += '<option value="0"></option>'
-
+                                    htmlOrderBy += '<option value="' + fields[i].name_db + '">' + fields[i].name_db + '</option>'
                                     for (let j = 0; j < list.length; j++) {
                                         //  console.log(list[j].id, fields[i].link_table_id)
                                         if (list[j].id === fields[i].link_table_id) {
@@ -604,6 +620,10 @@
                                     }
 
                                 }
+                                orderByDefault.innerHTML = htmlOrderBy
+                                orderByDefault.value = {{ .OrderByDefault}}
+                                    orderByDefaultAsc.value = {{ .OrderByDefaultAsc}}
+
                             }
 
                         } else {
@@ -639,6 +659,10 @@
             }
 
             function save(isNewField) {
+                // const orderByDefault = document.getElementById('order_by_default')
+                // const orderByDefaultAsc = document.getElementById('order_by_default_asc')
+                //let orderByDefaultAscVal = true
+              //  orderByDefaultAscVal = orderByDefaultAsc.value == 'true' ? true : false;
 
                 // return
                 fetch('/api/catalog-save',
@@ -651,7 +675,9 @@
                             id: id !== 0 ? id : 0,
                             name: name.value,
                             table_name: tableDb.value,
-                            type_entity: typeEntity
+                            type_entity: typeEntity,
+                            order_by_default: orderByDefault.value,
+                            order_by_default_asc:orderByDefaultAsc.value,
 
                         })
                     })

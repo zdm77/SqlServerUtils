@@ -148,6 +148,8 @@ func GetCatalogWorkListByIdJson(user *model.User, id int, isJSONParse bool) (err
 			//query += ` where ` + catalog.TableName + `.id in (` + strings.Join(ids, ",") + `) `
 		}
 	}
+
+	query += " order by " + catalog.TableName + "." + catalog.OrderByDefault + " " + catalog.OrderByDefaultAsc + " "
 	var jsonString string
 	//var json2 strings.
 	if isJSONParse {

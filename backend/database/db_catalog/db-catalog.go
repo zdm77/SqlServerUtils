@@ -61,7 +61,7 @@ func GetCatalogList(user *model.User, typeName string) (result []model.Catalog) 
 	//	}
 	//}
 
-	query = `select  id, name, table_name, type_entity from utils_catalog_list `
+	query = `select  id, name, table_name, type_entity, order_by_default, order_by_default_asc from utils_catalog_list `
 	if typeName != "" {
 		query += ` where type_entity='` + typeName + `'`
 	}
@@ -73,7 +73,7 @@ func GetCatalogList(user *model.User, typeName string) (result []model.Catalog) 
 	}
 	for rows.Next() {
 		var r model.Catalog
-		err = rows.Scan(&r.Id, &r.Name, &r.TableName, &r.TypeEntity)
+		err = rows.Scan(&r.Id, &r.Name, &r.TableName, &r.TypeEntity, &r.OrderByDefault, &r.OrderByDefaultAsc)
 		if err != nil {
 
 		}
@@ -118,16 +118,19 @@ func SaveCatalog(user *model.User, param model.Catalog) (err error, id int) {
 			}
 		}
 
-		query = `insert into utils_catalog_list (name, table_name, type_entity)
-					values (@Name, @TableDb, @TypeEntity);  SELECT SCOPE_IDENTITY()`
+		query = `insert into utils_catalog_list (name, table_name, type_entity, order_by_default, order_by_default_asc )
+					values (@Name, @TableDb, @TypeEntity, @order_by_default, @order_by_default_asc );  SELECT SCOPE_IDENTITY()`
 	} else {
-		query = `update  utils_catalog_list set name = @Name, table_name = @TableDb where id = @Id`
+		query = `update  utils_catalog_list set name = @Name, table_name = @TableDb, 
+                               order_by_default=@order_by_default,order_by_default_asc=@order_by_default_asc  where id = @Id`
 	}
 	stmt, _ = db.Prepare(query)
 	err = stmt.QueryRow(sql.Named("Name", param.Name),
 		sql.Named("TableDb", param.TableName),
 		sql.Named("Id", param.Id),
 		sql.Named("TypeEntity", param.TypeEntity),
+		sql.Named("order_by_default_asc", param.OrderByDefaultAsc),
+		sql.Named("order_by_default", param.OrderByDefault),
 	).Scan(&id)
 
 	if err != nil && err.Error() != "sql: no rows in result set" {
@@ -140,12 +143,12 @@ func GetCatalogById(user *model.User, id int, forForm bool) (r model.Catalog) {
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
 	//основа
-	query := `select  id, name, table_name, type_entity from utils_catalog_list where id = @Id`
+	query := `select  id, name, table_name, type_entity, order_by_default, order_by_default_asc  from utils_catalog_list where id = @Id`
 
 	stmt, err := db.Prepare(query)
 	row := stmt.QueryRow(sql.Named("Id", id))
 	countFields := 0
-	err = row.Scan(&r.Id, &r.Name, &r.TableName, &r.TypeEntity)
+	err = row.Scan(&r.Id, &r.Name, &r.TableName, &r.TypeEntity, &r.OrderByDefault, &r.OrderByDefaultAsc)
 	if err != nil {
 		log.Println(err.Error())
 	}
@@ -349,14 +352,18 @@ func DeleteCatalogList(user *model.User, id int) (err error) {
 func GetLinkList(user *model.User, id int, fieldLink, catalogIdFrom string) (err error, data []model.LinkTable) {
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
+	var (
+		orderByDefault, orderByDefaultAsc string
+	)
 	//получаем таблицу по айди
-	query := `select  table_name from  utils_catalog_list where id = ` + strconv.Itoa(id)
+	query := `select  table_name, order_by_default, order_by_default_asc  from  utils_catalog_list where id = ` + strconv.Itoa(id)
 	var tableName string
-	err = db.QueryRow(query).Scan(&tableName)
+	err = db.QueryRow(query).Scan(&tableName, &orderByDefault, &orderByDefaultAsc)
 
 	//доступ
 
 	isAccess := false
+
 	//if user.Login != user.SuperAdmin {
 	query = `select  is_access_check from utills_catalog_fields where catalog_id = ` + catalogIdFrom + ` and name_db = '` + fieldLink + `' `
 	err = db.QueryRow(query).Scan(&isAccess)
@@ -366,7 +373,8 @@ func GetLinkList(user *model.User, id int, fieldLink, catalogIdFrom string) (err
 	if isAccess {
 		query += ` ,access `
 	}
-	query += ` from ` + tableName + ` order by id`
+	query += ` from ` + tableName
+	query += " order by " + orderByDefault + " " + orderByDefaultAsc + " "
 	rows, err := db.Query(query)
 
 	defer rows.Close()

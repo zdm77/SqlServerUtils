@@ -1,13 +1,15 @@
 package model
 
 type Catalog struct {
-	Id            int     `json:"id"`
-	EntityId      int     `json:"entity_id"`
-	Name          string  `json:"name"`
-	TableName     string  `json:"table_name"`
-	Fields        []Field `json:"fields"`
-	TypeEntity    string  `json:"type_entity"`
-	IsCatalogTask bool    `json:"is_catalog_task"`
+	Id                int     `json:"id"`
+	EntityId          int     `json:"entity_id"`
+	Name              string  `json:"name"`
+	TableName         string  `json:"table_name"`
+	Fields            []Field `json:"fields"`
+	TypeEntity        string  `json:"type_entity"`
+	IsCatalogTask     bool    `json:"is_catalog_task"`
+	OrderByDefault    string  `json:"order_by_default"`
+	OrderByDefaultAsc string  `json:"order_by_default_asc"`
 }
 type Field struct {
 	Id           int    `json:"id"`
