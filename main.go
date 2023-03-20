@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"sqlutils/backend/database"
-	db_catalog_work "sqlutils/backend/database/db-catalog-work"
 	"sqlutils/backend/route"
 	catalog_route "sqlutils/backend/route/catalog-route"
 	catalog_work_route "sqlutils/backend/route/catalog-work-route"
@@ -166,11 +165,11 @@ func GetTestData(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 func GetTestDataForLocal(w http.ResponseWriter, r *http.Request) {
-	user := session.GetSessionData(r)
-
-	//list := database.Test(user, 0)
-	_, list := db_catalog_work.GetCatalogWorkListById(user, 5071, true)
-
-	data, _ := json.Marshal(list)
-	w.Write(data)
+	//user := session.GetSessionData(r)
+	//
+	////list := database.Test(user, 0)
+	//_, list := db_catalog_work.GetCatalogWorkListById(user, 5071, true)
+	//
+	//data, _ := json.Marshal(list)
+	//w.Write(data)
 }

@@ -25,12 +25,14 @@ type FieldVals struct {
 	FieldNames  []string   `json:"field_names"`
 }
 
-func GetTableLinkById(user *model.User, id int) (err error, table string) {
+func GetTableLinkById(user *model.User, id int) (err error, keyName, table string) {
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
-	query := `select table_name from utils_catalog_list where id=` + strconv.Itoa(id)
-	err = db.QueryRow(query).Scan(&table)
-	return err, table
+
+	query := `select p_key_name, table_name from utils_catalog_list where id =` + strconv.Itoa(id)
+	err = db.QueryRow(query).Scan(&keyName, &table)
+
+	return err, keyName, table
 }
 
 func GetCatalogWorkListByIdJson(user *model.User, id int, isJSONParse bool) (err error, result FieldVals) {
@@ -38,7 +40,7 @@ func GetCatalogWorkListByIdJson(user *model.User, id int, isJSONParse bool) (err
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
 
-	catalog := db_catalog.GetCatalogById(user, id, false)
+	catalog := db_catalog.GetCatalogById(user, id, false, true)
 	var data [][]string
 	var headers []string
 	var isList []bool
@@ -70,10 +72,10 @@ func GetCatalogWorkListByIdJson(user *model.User, id int, isJSONParse bool) (err
 		for _, cat := range catalog.Fields {
 
 			if cat.LinkTableId != 0 && cat.IsAccessCheck {
-				_, tableLink := GetTableLinkById(user, cat.LinkTableId)
+				_, keyName, tableLink := GetTableLinkById(user, cat.LinkTableId)
 
 				var ids []string
-				queryAcc := `select id, access from ` + tableLink
+				queryAcc := `select ` + keyName + `, access from ` + tableLink
 				rows, err := db.Query(queryAcc)
 				if err == nil {
 					isAccessInTable = true
@@ -93,7 +95,7 @@ func GetCatalogWorkListByIdJson(user *model.User, id int, isJSONParse bool) (err
 
 					}
 					if len(ids) > 0 {
-						wh := " and " + tableLink + ".id in (" + strings.Join(ids, ",") + ")"
+						wh := " and " + tableLink + "." + keyName + " in (" + strings.Join(ids, ",") + ")"
 						whereAccess = append(whereAccess, wh)
 					}
 
@@ -113,9 +115,9 @@ func GetCatalogWorkListByIdJson(user *model.User, id int, isJSONParse bool) (err
 		fieldNames = append(fieldNames, cat.NameDb)
 		if cat.IsIdentity || cat.Name != "" || !cat.IsNullable || !cat.IsNullableDb {
 			if cat.LinkTableId != 0 {
-				_, table := GetTableLinkById(user, cat.LinkTableId)
-				joinTables += " left join " + table + " on " + catalog.TableName + "." + cat.NameDb + "=" + table + ".id"
-				field = "coalesce(cast(" + table + ".name as varchar(255)), '') " + cat.NameDb
+				_, keyName, table := GetTableLinkById(user, cat.LinkTableId)
+				joinTables += " left join " + table + " on " + catalog.TableName + "." + cat.NameDb + "=" + table + "." + keyName
+				field = "coalesce(cast(" + table + "." + cat.LinkFieldView + " as varchar(255)), '') " + cat.NameDb
 			} else {
 				field = "coalesce(cast(" + catalog.TableName + "." + cat.NameDb + " as varchar(255)), '') " + cat.NameDb
 			}
@@ -148,8 +150,9 @@ func GetCatalogWorkListByIdJson(user *model.User, id int, isJSONParse bool) (err
 			//query += ` where ` + catalog.TableName + `.id in (` + strings.Join(ids, ",") + `) `
 		}
 	}
-
-	query += " order by " + catalog.TableName + "." + catalog.OrderByDefault + " " + catalog.OrderByDefaultAsc + " "
+	if catalog.OrderByDefault != "" {
+		query += " order by " + catalog.TableName + "." + catalog.OrderByDefault + " " + catalog.OrderByDefaultAsc + " "
+	}
 	var jsonString string
 	//var json2 strings.
 	if isJSONParse {
@@ -195,185 +198,186 @@ func GetCatalogWorkListByIdJson(user *model.User, id int, isJSONParse bool) (err
 	return err, result
 }
 
-func GetCatalogWorkListById(user *model.User, id int, isJSONParse bool) (err error, result FieldVals) {
-
-	db, _ := database.GetDb(user.ConnString)
-	defer db.Close()
-
-	catalog := db_catalog.GetCatalogById(user, id, false)
-	var data [][]string
-	var headers []string
-	var isList []bool
-	query := `select `
-	var fields []string
-	var fieldId string
-	var valuesId []string
-	//var catalogRes model.Catalog
-	var joinTables string
-	//queryAccess := `select id, access from ` + catalog.TableName
-	type Access struct {
-		id    string
-		user  []string
-		users string
-	}
-	//var access []Access
-	//var ids []string
-	isAccessInTable := false
-	//if user.SuperAdmin != user.Login {
-	//	rows, err := db.Query(queryAccess)
-	//
-	//	if err == nil {
-	//		isAccessInTable = true
-	//		for rows.Next() {
-	//			var a Access
-	//			rows.Scan(&a.id, &a.users)
-	//			users := strings.Split(a.users, ",")
-	//			for _, u := range users {
-	//				u = strings.TrimSpace(u)
-	//				if u == user.Login {
-	//					ids = append(ids, a.id)
-	//				}
-	//			}
-	//		}
-	//	}
-	//}
-	var whereAccess []string
-	if user.SuperAdmin != user.Login {
-		//ищем списки для проверки прав
-		for _, cat := range catalog.Fields {
-			if cat.LinkTableId != 0 && cat.IsAccessCheck {
-				_, tableLink := GetTableLinkById(user, cat.LinkTableId)
-
-				var ids []string
-				queryAcc := `select id, access from ` + tableLink
-				rows, err := db.Query(queryAcc)
-				if err == nil {
-					isAccessInTable = true
-					defer rows.Close()
-					for rows.Next() {
-
-						var a string
-						var wId string
-						err = rows.Scan(&wId, &a)
-						arr := strings.Split(a, ",")
-						for _, a1 := range arr {
-							a1 = strings.TrimSpace(a1)
-							if a1 == user.Login {
-								ids = append(ids, wId)
-							}
-						}
-
-					}
-
-					if len(ids) > 0 {
-						wh := " and " + tableLink + ".id in (" + strings.Join(ids, ",") + ")"
-						whereAccess = append(whereAccess, wh)
-					}
-
-				}
-			}
-		}
-
-	}
-	for _, cat := range catalog.Fields {
-
-		var field string
-		if cat.IsPrimaryKey {
-			fieldId = cat.NameDb
-		}
-		if cat.IsIdentity || cat.Name != "" || !cat.IsNullable || !cat.IsNullableDb {
-			if cat.LinkTableId != 0 {
-				_, table := GetTableLinkById(user, cat.LinkTableId)
-				joinTables += " left join " + table + " on " + catalog.TableName + "." + cat.NameDb + "=" + table + ".id"
-				field = "coalesce(cast(" + table + ".name as varchar(255)), '') " + cat.Name
-			} else {
-				field = "coalesce(cast(" + catalog.TableName + "." + cat.NameDb + " as varchar(255)), '') " + cat.NameDb
-			}
-
-			fields = append(fields, field)
-			isList = append(isList, cat.IsList)
-			if !cat.IsIdentity {
-				headers = append(headers, cat.Name)
-			} else {
-				headers = append(headers, cat.NameDb)
-			}
-
-		}
-	}
-	query += strings.Join(fields, ",") + " from " + catalog.TableName
-	query += joinTables
-	if user.SuperAdmin != user.Login {
-		if isAccessInTable {
-			if len(whereAccess) == 0 {
-				return err, result
-			}
-			query += " where 1=1 "
-			for _, data := range whereAccess {
-				query += data
-			}
-			//query += ` where ` + catalog.TableName + `.id in (` + strings.Join(ids, ",") + `) `
-		}
-	}
-	var jsonString string
-	if isJSONParse {
-		query += "  for json auto "
-
-		err = db.QueryRow(query).Scan(&jsonString)
-		if err != nil {
-			log.Println(err.Error())
-			return err, result
-		}
-		jsonArr := strings.Split(jsonString, "{")
-		//header := make(map[string]bool)
-		for idx, js := range jsonArr {
-			if idx != 0 {
-				str := strings.ReplaceAll(js, "},", "")
-				arr := strings.Split(str, ",")
-				var dt []string
-				for _, a := range arr {
-					vl := strings.Split(a, ":")
-					nameDb := vl[0]
-
-					val := strings.ReplaceAll(vl[1], `}]`, "")
-					for _, f := range catalog.Fields {
-						if f.NameDb == strings.ReplaceAll(nameDb, "\"", "") && f.NameType == "bit" {
-							if val == `"1"` {
-								val = "checked"
-							} else {
-								val = "unchecked"
-							}
-						}
-					}
-					if nameDb == `"`+fieldId+`"` {
-						valuesId = append(valuesId, val)
-					}
-					dt = append(dt, val[1:len(val)-1])
-
-				}
-				data = append(data, dt)
-			}
-
-		}
-	}
-	//for key, _ := range header {
-	//	headers = append(headers, key)
-	//}
-
-	result = FieldVals{
-		CatalogId:   id,
-		FieldId:     fieldId,
-		NameCatalog: catalog.Name,
-		Headers:     headers,
-		Fields:      fields,
-		Vals:        data,
-		ValuesId:    valuesId,
-		IsList:      isList,
-		Data:        data,
-		Json:        jsonString,
-	}
-	return err, result
-}
+//func GetCatalogWorkListById(user *model.User, id int, isJSONParse bool) (err error, result FieldVals) {
+//
+//	db, _ := database.GetDb(user.ConnString)
+//	defer db.Close()
+//
+//	catalog,_ := db_catalog.GetCatalogById(user, id, false)
+//	var data [][]string
+//	var headers []string
+//	var isList []bool
+//	query := `select `
+//	var fields []string
+//	var fieldId string
+//	var valuesId []string
+//	//var catalogRes model.Catalog
+//	var joinTables string
+//	//queryAccess := `select id, access from ` + catalog.TableName
+//	type Access struct {
+//		id    string
+//		user  []string
+//		users string
+//	}
+//	//var access []Access
+//	//var ids []string
+//	isAccessInTable := false
+//	//if user.SuperAdmin != user.Login {
+//	//	rows, err := db.Query(queryAccess)
+//	//
+//	//	if err == nil {
+//	//		isAccessInTable = true
+//	//		for rows.Next() {
+//	//			var a Access
+//	//			rows.Scan(&a.id, &a.users)
+//	//			users := strings.Split(a.users, ",")
+//	//			for _, u := range users {
+//	//				u = strings.TrimSpace(u)
+//	//				if u == user.Login {
+//	//					ids = append(ids, a.id)
+//	//				}
+//	//			}
+//	//		}
+//	//	}
+//	//}
+//	var whereAccess []string
+//	if user.SuperAdmin != user.Login {
+//		//ищем списки для проверки прав
+//		for _, cat := range catalog.Fields {
+//			if cat.LinkTableId != 0 && cat.IsAccessCheck {
+//				_, tableLink := GetTableLinkById(user, cat.LinkTableId)
+//
+//				var ids []string
+//				queryAcc := `select id, access from ` + tableLink
+//				rows, err := db.Query(queryAcc)
+//				if err == nil {
+//					isAccessInTable = true
+//					defer rows.Close()
+//					for rows.Next() {
+//
+//						var a string
+//						var wId string
+//						err = rows.Scan(&wId, &a)
+//						arr := strings.Split(a, ",")
+//						for _, a1 := range arr {
+//							a1 = strings.TrimSpace(a1)
+//							if a1 == user.Login {
+//								ids = append(ids, wId)
+//							}
+//						}
+//
+//					}
+//
+//					if len(ids) > 0 {
+//						wh := " and " + tableLink + ".id in (" + strings.Join(ids, ",") + ")"
+//						whereAccess = append(whereAccess, wh)
+//					}
+//
+//				}
+//			}
+//		}
+//
+//	}
+//	for _, cat := range catalog.Fields {
+//
+//		var field string
+//		if cat.IsPrimaryKey {
+//			fieldId = cat.NameDb
+//		}
+//		if cat.IsIdentity || cat.Name != "" || !cat.IsNullable || !cat.IsNullableDb {
+//			if cat.LinkTableId != 0 {
+//				_, table := GetTableLinkById(user, cat.LinkTableId)
+//				joinTables += " left join " + table + " on " + catalog.TableName + "." + cat.NameDb + "=" + table + ".id"
+//				field = "coalesce(cast(" + table + ".name as varchar(255)), '') " + cat.Name
+//			} else {
+//				field = "coalesce(cast(" + catalog.TableName + "." + cat.NameDb + " as varchar(255)), '') " + cat.NameDb
+//			}
+//
+//			fields = append(fields, field)
+//			isList = append(isList, cat.IsList)
+//			if !cat.IsIdentity {
+//				headers = append(headers, cat.Name)
+//			} else {
+//				headers = append(headers, cat.NameDb)
+//			}
+//
+//		}
+//	}
+//	query += strings.Join(fields, ",") + " from " + catalog.TableName
+//	query += joinTables
+//	if user.SuperAdmin != user.Login {
+//		if isAccessInTable {
+//			if len(whereAccess) == 0 {
+//				return err, result
+//			}
+//			query += " where 1=1 "
+//			for _, data := range whereAccess {
+//				query += data
+//			}
+//			//query += ` where ` + catalog.TableName + `.id in (` + strings.Join(ids, ",") + `) `
+//		}
+//	}
+//	var jsonString string
+//	if isJSONParse {
+//		query += "  for json auto "
+//
+//		err = db.QueryRow(query).Scan(&jsonString)
+//		if err != nil {
+//			log.Println(err.Error())
+//			return err, result
+//		}
+//		jsonArr := strings.Split(jsonString, "{")
+//		//header := make(map[string]bool)
+//		for idx, js := range jsonArr {
+//			if idx != 0 {
+//				str := strings.ReplaceAll(js, "},", "")
+//				arr := strings.Split(str, ",")
+//				var dt []string
+//				for _, a := range arr {
+//					vl := strings.Split(a, ":")
+//					nameDb := vl[0]
+//
+//					val := strings.ReplaceAll(vl[1], `}]`, "")
+//					for _, f := range catalog.Fields {
+//						if f.NameDb == strings.ReplaceAll(nameDb, "\"", "") && f.NameType == "bit" {
+//							if val == `"1"` {
+//								val = "checked"
+//							} else {
+//								val = "unchecked"
+//							}
+//						}
+//					}
+//					if nameDb == `"`+fieldId+`"` {
+//						valuesId = append(valuesId, val)
+//					}
+//					dt = append(dt, val[1:len(val)-1])
+//
+//				}
+//				data = append(data, dt)
+//			}
+//
+//		}
+//	}
+//	//for key, _ := range header {
+//	//	headers = append(headers, key)
+//	//}
+//
+//	result = FieldVals{
+//		CatalogId:   id,
+//		FieldId:     fieldId,
+//		NameCatalog: catalog.Name,
+//		Headers:     headers,
+//		Fields:      fields,
+//		Vals:        data,
+//		ValuesId:    valuesId,
+//		IsList:      isList,
+//		Data:        data,
+//		Json:        jsonString,
+//	}
+//	return err, result
+//}
 func SaveCatalogWork(user *model.User, catalog model.Catalog) (err error, id int) {
+	_, keyName, _ := db_catalog.GetDbTableFields(user, catalog.TableName, false)
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
 	var fieldsA []string
@@ -486,7 +490,7 @@ func SaveCatalogWork(user *model.User, catalog model.Catalog) (err error, id int
 	}
 	query += strings.Join(vals, ",")
 	if catalog.EntityId != 0 {
-		query += ` where id = ` + strconv.Itoa(catalog.EntityId)
+		query += ` where ` + keyName + `=` + strconv.Itoa(catalog.EntityId)
 	} else {
 		query += ") ;  SELECT SCOPE_IDENTITY()"
 	}
@@ -507,7 +511,7 @@ func SaveCatalogWork(user *model.User, catalog model.Catalog) (err error, id int
 func GetEntityByCatalogId(user *model.User, catalogId, entityId int) (err error, data model.Catalog) {
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
-	catalog := db_catalog.GetCatalogById(user, catalogId, true)
+	catalog := db_catalog.GetCatalogById(user, catalogId, true, false)
 
 	var fields []string
 	query := `select `
@@ -515,7 +519,7 @@ func GetEntityByCatalogId(user *model.User, catalogId, entityId int) (err error,
 		field.NameDb = "coalesce(cast(" + field.NameDb + " as varchar(255)), '') " + field.NameDb
 		fields = append(fields, field.NameDb)
 	}
-	query += strings.Join(fields, ",") + ` from ` + catalog.TableName + ` where id = ` + strconv.Itoa(entityId) + ` for json auto `
+	query += strings.Join(fields, ",") + ` from ` + catalog.TableName + ` where  ` + catalog.PKeyName + `=` + strconv.Itoa(entityId) + ` for json auto `
 	var jsonStr string
 	err = db.QueryRow(query).Scan(&jsonStr)
 	if err != nil {
@@ -553,10 +557,10 @@ func GetEntityByCatalogId(user *model.User, catalogId, entityId int) (err error,
 }
 func DeleteCatalogWorkList(user *model.User, id, catalogId int) (err error) {
 
-	catalog := db_catalog.GetCatalogById(user, catalogId, false)
+	catalog := db_catalog.GetCatalogById(user, catalogId, false, false)
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
-	query := `delete from  ` + catalog.TableName + ` where id = ` + strconv.Itoa(id)
+	query := `delete from  ` + catalog.TableName + ` where ` + catalog.PKeyName + ` = ` + strconv.Itoa(id)
 
 	_, err = db.Exec(query)
 
@@ -566,7 +570,10 @@ func DeleteCatalogWorkList(user *model.User, id, catalogId int) (err error) {
 func GetCatalogAccessRecord(user *model.User, id int, table string) (err error, result []model.AccessRecord) {
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
-	query := `select access from ` + table + ` where id = ` + strconv.Itoa(id)
+	query := `select p_key_name from utils_catalog_list where table_name='` + table + `'`
+	var keyName string
+	db.QueryRow(query).Scan(&keyName)
+	query = `select access from ` + table + ` where ` + keyName + ` = ` + strconv.Itoa(id)
 	var usersInTableStr string
 	err = db.QueryRow(query).Scan(&usersInTableStr)
 	usersInTable := strings.Split(usersInTableStr, ",")
@@ -605,7 +612,8 @@ func GetCatalogAccessRecord(user *model.User, id int, table string) (err error, 
 func SaveCatalogAccessRecord(user *model.User, id int, table, access string) (err error) {
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
-	query := `update ` + table + ` set access = '` + access + `'  where id = ` + strconv.Itoa(id)
+	_, keyName, _ := db_catalog.GetDbTableFields(user, table, false)
+	query := `update ` + table + ` set access = '` + access + `'  where ` + keyName + ` = ` + strconv.Itoa(id)
 	_, err = db.Exec(query)
 	if err != nil {
 		log.Println(err.Error())

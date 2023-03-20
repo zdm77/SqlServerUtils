@@ -10,6 +10,7 @@ type Catalog struct {
 	IsCatalogTask     bool    `json:"is_catalog_task"`
 	OrderByDefault    string  `json:"order_by_default"`
 	OrderByDefaultAsc string  `json:"order_by_default_asc"`
+	PKeyName          string  `json:"p_key_name"`
 }
 type Field struct {
 	Id           int    `json:"id"`
@@ -29,6 +30,7 @@ type Field struct {
 	IsList         bool   `json:"is_list"`
 	IsForm         bool   `json:"is_form"`
 	LinkTableId    int    `json:"link_table_id"`
+	LinkFieldView  string `json:"link_field_view"`
 	IsUserCreate   bool   `json:"is_user_create"`
 	IsUserModify   bool   `json:"is_user_modify"`
 	IsDateCreate   bool   `json:"is_date_create"`
@@ -38,6 +40,7 @@ type Field struct {
 	IsForeignField bool   `json:"is_foreign_field"`
 	OrderBy        int    `json:"order_by"`
 	OrderByForm    int    `json:"order_by_form"`
+	IsNewField     bool   `json:"is_new_field"`
 }
 type LinkTable struct {
 	Id     int    `json:"id"`

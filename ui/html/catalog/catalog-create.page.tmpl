@@ -41,8 +41,12 @@
                                 class="btn btn-primary bi bi-save" onclick="save()">
                             <span style="margin-left: 3px">Сохранить</span>
                         </button>
+                        {{/*                        <button type="button" class="btn btn-primary bi bi-plus-circle" data-bs-toggle="modal"*/}}
+                        {{/*                                data-bs-target="#modalField">*/}}
+                        {{/*                            Создать*/}}
+                        {{/*                        </button>*/}}
                         <button type="button" class="btn btn-primary bi bi-plus-circle" data-bs-toggle="modal"
-                                data-bs-target="#modalField">
+                                onclick="createField()">
                             Создать
                         </button>
                         <button id="back" style="margin-left: 15px;font-size:14px;"
@@ -64,19 +68,39 @@
                                         <table id="table_field"
                                                class="table table-striped table-bordered table-sm table-responsive">
                                             <tr>
+                                                <td>Наименование</td>
+                                                <td><input class="form-control" id="field_name_name" value=""/></td>
+                                            </tr>
+                                            <tr>
                                                 <td>Поле БД</td>
                                                 <td><input class="form-control" id="field_name" value=""/></td>
                                             </tr>
                                             <tr>
                                                 <td>Тип</td>
                                                 <td>
-                                                    <select class="form-select" id="field_type">
+                                                    <select class="form-select" id="field_type"
+                                                            onchange="changeTypeNew()">
                                                         <option selected value="varchar">Строка</option>
                                                         <option value="int">Целое число</option>
                                                         <option value="float">Число с плавающей запятой</option>
                                                         <option value="date">Дата</option>
                                                         <option value="bit">Логический (да/нет)</option>
                                                         <option value="list">Список</option>
+                                                    </select>
+                                                </td>
+                                            </tr>
+                                            <tr id="link_block_table">
+                                                <td>Таблица ссылка</td>
+                                                <td>
+                                                    <select class="form-select" id="link_table_view"
+                                                            onchange="getFieldsLinkTable()">
+                                                    </select>
+                                                </td>
+                                            </tr>
+                                            <tr id="link_block">
+                                                <td>Поле для отображения</td>
+                                                <td>
+                                                    <select class="form-select" id="link_field_view">
                                                     </select>
                                                 </td>
                                             </tr>
@@ -108,16 +132,105 @@
             }
         </style>
         <script>
-            let myModalEl = document.getElementById('modalField')
-
             let myModal = new bootstrap.Modal(document.getElementById('modalField'), {
                 keyboard: false
             })
+            let isNewField = false
+
+            function createField() {
+                isNewField = true
+                myModal.show()
+                $('#field_name_name').val('')
+                $('#field_name').val('')
+            }
+
+            function editField(nameDb, name, linkTable, linkField, type, isForeign) {
+                isNewField = false
+                myModal.show()
+                $('#field_name_name').val(name)
+                $('#field_name').val(nameDb)
+                $('#field_name').prop('disabled', true);
+                if (isForeign == 'true') {
+                    $('#link_block').show()
+                    $('#link_block_table').show()
+                    $('#field_type').val('list')
+                    $('#link_table_view').val(linkTable)
+                    getFieldsLinkTable(linkField)
+                    //$('#link_field_view').val(linkField)
+
+                } else {
+                    $('#field_type').val(type)
+                    $('#link_block').hide()
+                    $('#link_block_table').hide()
+                }
+                // $('#field_name_name').val(name)
+                // $('#field_name_name').val(name)
+
+            }
+
+            function getFieldsLinkTable(val) {
+                let elFields = document.getElementById('link_field_view')
+                elFields.innerHTML = ''
+                const tableNameLink = $('#link_table_view').val()
+
+                fetch('/api/get-db-fields',
+                    {
+                        method: 'POST',
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            name: tableNameLink,
+                            by_catalog_id: true,
+
+
+                        })
+                    })
+                    .then(response => response.json())
+                    .then((response) => {
+                        if (response) {
+
+                            let html = ''
+
+                            response.map(function (item) {
+
+                                html += '<option  value="' + item.name_db + '">' + item.name_db + '</option>'
+                            })
+
+                            elFields.innerHTML = html
+                            if (val) {
+                                elFields.value = val
+                            }
+                        }
+
+                    })
+
+            }
+
+            function changeTypeNew() {
+
+                const val = $('#field_type').val()
+
+                if (val === 'list') {
+                    $('#link_block').show()
+                    $('#link_block_table').show()
+                } else {
+
+                    $('#link_block').hide()
+                    $('#link_block_table').hide()
+                }
+            }
+
+            $('#link_block').hide()
+            $('#link_block_table').hide()
+            let myModalEl = document.getElementById('modalField')
+
 
             let inputNameField = document.getElementById('field_name')
+            let inputNameNameField = document.getElementById('field_name_name')
 
             myModalEl.addEventListener('shown.bs.modal', function () {
-                inputNameField.focus()
+                inputNameNameField.focus()
             })
             const name = document.getElementById('name')
             name.addEventListener('keyup', function () {
@@ -136,8 +249,13 @@
             const orderByDefaultAsc = document.getElementById('order_by_default_asc')
 
             function saveField() {
+
                 let nameField = document.getElementById('field_name')
+                let nameNameField = document.getElementById('field_name_name')
                 let typeField = document.getElementById('field_type')
+                let linkTableView = document.getElementById('link_table_view')
+
+                let linkFieldView = document.getElementById('link_field_view')
                 fetch('/api/create-db-field',
                     {
                         method: 'POST',
@@ -148,6 +266,12 @@
                             name_db: nameField.value,
                             table_name: document.getElementById('table_name').value,
                             name_type: typeField.value,
+                            link_table_id: Number(linkTableView.value),
+                            link_field_view: linkFieldView.value,
+                            catalog_id: id,
+                            name: nameNameField.value,
+                            is_new_field: Boolean(isNewField),
+
                         })
 
                     })
@@ -175,7 +299,10 @@
                                 is_nullable: true,
                                 is_nullable_db: true,
                             })
-                            save(true)
+                            location.reload();
+
+                            //renderTable()
+                            //  save(true)
                             // fetch('/api/save-db-fields',
                             //     {
                             //         method: 'POST',
@@ -193,7 +320,7 @@
                             //     })
                             //getFieldsByCatalogId(nameField.value, typeField.value)
                         } else {
-                            showError(response)
+                            alert(response)
                         }
                     })
 
@@ -426,10 +553,18 @@
                 html += '</thead>'
                 html += '<tbody>'
                 fields.map(function (item) {
-
+                    console.log(item)
+                    //   editField(item)
+                    let strEdit = ''
+                    strEdit += '"' + item.name_db + '",'
+                    strEdit += '"' + item.name + '",'
+                    strEdit += '"' + item.link_table_id + '",'
+                    strEdit += '"' + item.link_field_view + '",'
+                    strEdit += '"' + item.name_type + '",'
+                    strEdit += '"' + item.is_foreign_field + '"'
 
                     html += '<tr>' +
-                        '<td>' + item.name_db + '</td>'
+                        '<td style="cursor: pointer" ><div onclick=editField(' + strEdit + ')>' + item.name_db + '</div> </td>'
                     html += '<td><input onkeyup="changeNameField(' + counter + ')"  class="form-control" id=valName' + counter + ' value="' + item.name + '"'
                     if (item.is_identity) html += ' disabled '
                     html += '><div hidden>' + item.name + '</div> </td>'
@@ -593,7 +728,9 @@
                     })
                     .then(response => response.json())
                     .then((response) => {
+                        console.log(fields)
                         if (response.text != 'not-login') {
+
                             response.map(function (item) {
                                 list.push(item)
                             })
@@ -604,11 +741,13 @@
                                     let htmlD = ''
                                     let selectedId = 0
                                     let el = document.getElementById('linkId' + i)
+                                    let el2 = document.getElementById('link_table_view')
                                     htmlD += '<option value="0"></option>'
                                     htmlOrderBy += '<option value="' + fields[i].name_db + '">' + fields[i].name_db + '</option>'
                                     for (let j = 0; j < list.length; j++) {
                                         //  console.log(list[j].id, fields[i].link_table_id)
                                         if (list[j].id === fields[i].link_table_id) {
+
                                             selectedId = j + 1
                                         }
                                         // console.log(list[j])
@@ -617,6 +756,10 @@
                                     if (el) {
                                         el.innerHTML = htmlD
                                         el.selectedIndex = selectedId
+                                    }
+                                    if (el2) {
+                                        el2.innerHTML = htmlD
+                                        el2.selectedIndex = selectedId
                                     }
 
                                 }
@@ -662,7 +805,7 @@
                 // const orderByDefault = document.getElementById('order_by_default')
                 // const orderByDefaultAsc = document.getElementById('order_by_default_asc')
                 //let orderByDefaultAscVal = true
-              //  orderByDefaultAscVal = orderByDefaultAsc.value == 'true' ? true : false;
+                //  orderByDefaultAscVal = orderByDefaultAsc.value == 'true' ? true : false;
 
                 // return
                 fetch('/api/catalog-save',
@@ -677,7 +820,7 @@
                             table_name: tableDb.value,
                             type_entity: typeEntity,
                             order_by_default: orderByDefault.value,
-                            order_by_default_asc:orderByDefaultAsc.value,
+                            order_by_default_asc: orderByDefaultAsc.value,
 
                         })
                     })

@@ -9,8 +9,15 @@ import (
 	"strings"
 )
 
-func GetDbTableFields(user *model.User, tableName string, forIsNew bool) (fields []model.Field, err error) {
-	query := `SELECT 
+func GetDbTableFields(user *model.User, tableNameOrCatalogId string, byCatalogId bool) (fields []model.Field, keyName string, err error) {
+	db, err := database.GetDb(user.ConnString)
+	defer db.Close()
+	var query string
+	if byCatalogId {
+		query = `select table_name from utils_catalog_list where id = ` + tableNameOrCatalogId
+		db.QueryRow(query).Scan(&tableNameOrCatalogId)
+	}
+	query = `SELECT 
     c.name ,
     t.Name ,
     c.max_length,
@@ -29,9 +36,8 @@ LEFT OUTER JOIN
 LEFT OUTER JOIN 
     sys.indexes i ON ic.object_id = i.object_id AND ic.index_id = i.index_id
 WHERE
-    c.object_id = OBJECT_ID('` + tableName + `')`
-	db, err := database.GetDb(user.ConnString)
-	defer db.Close()
+    c.object_id = OBJECT_ID('` + tableNameOrCatalogId + `')`
+
 	rows, err := db.Query(query)
 	defer rows.Close()
 	for rows.Next() {
@@ -41,12 +47,15 @@ WHERE
 		//if forIsNew && f.IsPrimaryKey == false {
 		//	f.IsList = true
 		//}
+		if f.IsPrimaryKey {
+			keyName = f.NameDb
+		}
 		if f.NameDb != "access" {
 			fields = append(fields, f)
 		}
 	}
 
-	return fields, err
+	return fields, keyName, err
 }
 func GetCatalogList(user *model.User, typeName string) (result []model.Catalog) {
 	db, _ := database.GetDb(user.ConnString)
@@ -87,7 +96,22 @@ func SaveCatalog(user *model.User, param model.Catalog) (err error, id int) {
 	defer db.Close()
 	var query string
 	var stmt *sql.Stmt
-
+	fields, keyFieldName, _ := GetDbTableFields(user, param.TableName, false)
+	//проверяем, есть ли поле доступа
+	isAccess := false
+	for _, f := range fields {
+		if f.NameDb == "access" {
+			isAccess = true
+		}
+	}
+	if !isAccess {
+		query = `alter table ` + param.TableName + `
+    add access ntext`
+		_, err = db.Exec(query)
+		if err != nil {
+			log.Println(err.Error())
+		}
+	}
 	if param.Id == 0 {
 		//пробуем создать таблицу, если не существует
 
@@ -118,11 +142,11 @@ func SaveCatalog(user *model.User, param model.Catalog) (err error, id int) {
 			}
 		}
 
-		query = `insert into utils_catalog_list (name, table_name, type_entity, order_by_default, order_by_default_asc )
-					values (@Name, @TableDb, @TypeEntity, @order_by_default, @order_by_default_asc );  SELECT SCOPE_IDENTITY()`
+		query = `insert into utils_catalog_list (name, table_name, type_entity, order_by_default, order_by_default_asc, p_key_name )
+					values (@Name, @TableDb, @TypeEntity, @order_by_default, @order_by_default_asc, @p_key_name );  SELECT SCOPE_IDENTITY()`
 	} else {
 		query = `update  utils_catalog_list set name = @Name, table_name = @TableDb, 
-                               order_by_default=@order_by_default,order_by_default_asc=@order_by_default_asc  where id = @Id`
+                               order_by_default=@order_by_default,order_by_default_asc=@order_by_default_asc, p_key_name=@p_key_name  where id = @Id`
 	}
 	stmt, _ = db.Prepare(query)
 	err = stmt.QueryRow(sql.Named("Name", param.Name),
@@ -131,6 +155,7 @@ func SaveCatalog(user *model.User, param model.Catalog) (err error, id int) {
 		sql.Named("TypeEntity", param.TypeEntity),
 		sql.Named("order_by_default_asc", param.OrderByDefaultAsc),
 		sql.Named("order_by_default", param.OrderByDefault),
+		sql.Named("p_key_name", keyFieldName),
 	).Scan(&id)
 
 	if err != nil && err.Error() != "sql: no rows in result set" {
@@ -139,28 +164,33 @@ func SaveCatalog(user *model.User, param model.Catalog) (err error, id int) {
 
 	return err, id
 }
-func GetCatalogById(user *model.User, id int, forForm bool) (r model.Catalog) {
+func GetCatalogById(user *model.User, id int, forForm, forView bool) (r model.Catalog) {
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
 	//основа
-	query := `select  id, name, table_name, type_entity, order_by_default, order_by_default_asc  from utils_catalog_list where id = @Id`
+	query := `select  id, name, table_name, type_entity, order_by_default, order_by_default_asc, p_key_name  from utils_catalog_list where id = @Id`
 
 	stmt, err := db.Prepare(query)
 	row := stmt.QueryRow(sql.Named("Id", id))
 	countFields := 0
-	err = row.Scan(&r.Id, &r.Name, &r.TableName, &r.TypeEntity, &r.OrderByDefault, &r.OrderByDefaultAsc)
+	err = row.Scan(&r.Id, &r.Name, &r.TableName, &r.TypeEntity, &r.OrderByDefault, &r.OrderByDefaultAsc, &r.PKeyName)
 	if err != nil {
 		log.Println(err.Error())
 	}
-	fieldsDb, err := GetDbTableFields(user, r.TableName, false)
+	fieldsDb, _, err := GetDbTableFields(user, r.TableName, false)
 	//табличная часть
-	query = `select id, name, catalog_id, name_db, name_type, max_length, precision, scale, is_nullable, is_identity, 
-       is_primary_key, is_nullable_db, is_list, is_form, link_table_id, is_user_create, is_user_modify, is_date_create, 
-    is_date_modify, is_access_check , is_foreign_field, coalesce(order_by, 0) order_by , coalesce(order_by_form, 0) order_by_form
+	query = `select id, coalesce(name,''), catalog_id, name_db, name_type, coalesce(max_length,0), coalesce(precision,0), coalesce(scale,0), is_nullable, is_identity, 
+       is_primary_key, is_nullable_db, coalesce(is_list,0), coalesce(is_form,0), link_table_id, is_user_create, is_user_modify, is_date_create, 
+    is_date_modify, coalesce(is_access_check,0) , coalesce(is_foreign_field,0), coalesce(order_by, 0) order_by , 
+    coalesce(order_by_form, 0) order_by_form, coalesce(link_field_view, '') link_field_view
 			from utills_catalog_fields where catalog_id=` + strconv.Itoa(id)
 	if forForm {
 		query += ` and is_form=1 order by order_by_form`
 	} else {
+		if forView {
+			//query += ` and is_list=1 `
+		}
+
 		query += ` order by order_by`
 	}
 	rows, err := db.Query(query)
@@ -172,7 +202,7 @@ func GetCatalogById(user *model.User, id int, forForm bool) (r model.Catalog) {
 		err = rows.Scan(&f.Id, &f.Name, &f.CatalogId, &f.NameDb, &f.NameType, &f.MaxLength, &f.Precision, &f.Scale,
 			&f.IsNullable, &f.IsIdentity, &f.IsPrimaryKey, &f.IsNullableDb, &f.IsList, &f.IsForm, &f.LinkTableId,
 			&f.IsUserCreate, &f.IsUserModify, &f.IsDateCreate, &f.IsDateModify, &f.IsAccessCheck, &f.IsForeignField,
-			&f.OrderBy, &f.OrderByForm)
+			&f.OrderBy, &f.OrderByForm, &f.LinkFieldView)
 
 		name := f.Name
 		isNullDb := f.IsNullableDb
@@ -190,7 +220,11 @@ func GetCatalogById(user *model.User, id int, forForm bool) (r model.Catalog) {
 		isForeignField := f.IsForeignField
 		orderBy := f.OrderBy
 		orderByForm := f.OrderByForm
+		linkFieldView := f.LinkFieldView
 		for _, field := range fieldsDb {
+			//if field.IsPrimaryKey {
+			//	keyName = field.NameDb
+			//}
 			if field.NameDb == f.NameDb {
 				f = field
 				f.Name = name
@@ -211,6 +245,7 @@ func GetCatalogById(user *model.User, id int, forForm bool) (r model.Catalog) {
 				f.IsForeignField = isForeignField
 				f.OrderBy = orderBy
 				f.OrderByForm = orderByForm
+				f.LinkFieldView = linkFieldView
 
 			}
 		}
@@ -278,6 +313,7 @@ func SaveCatalogFields(user *model.User, fields []model.Field) (err error) {
 	var query, queryIns, queryUpd string
 	var catalogId = fields[0].CatalogId
 	var isNew int
+
 	query = `select count(id) from utills_catalog_fields where catalog_id=` + strconv.Itoa(catalogId)
 	err = db.QueryRow(query).Scan(&isNew)
 	//if isNew == 0 {
@@ -363,11 +399,12 @@ func GetLinkList(user *model.User, id int, fieldLink, catalogIdFrom string) (err
 	//доступ
 
 	isAccess := false
-
+	_, keyFieldName, _ := GetDbTableFields(user, tableName, false)
 	//if user.Login != user.SuperAdmin {
-	query = `select  is_access_check from utills_catalog_fields where catalog_id = ` + catalogIdFrom + ` and name_db = '` + fieldLink + `' `
-	err = db.QueryRow(query).Scan(&isAccess)
-	query = `select id, name `
+	linkField := "name"
+	query = `select  is_access_check, link_field_view from utills_catalog_fields where catalog_id = ` + catalogIdFrom + ` and name_db = '` + fieldLink + `' `
+	err = db.QueryRow(query).Scan(&isAccess, &linkField)
+	query = `select  ` + keyFieldName + `, ` + linkField
 	//}
 
 	if isAccess {
@@ -401,6 +438,7 @@ func GetLinkList(user *model.User, id int, fieldLink, catalogIdFrom string) (err
 	return err, data
 }
 func CreateDbField(user *model.User, field model.Field) (err error) {
+
 	db, _ := database.GetDb(user.ConnString)
 	//tx, _ := db.Begin()
 	defer db.Close()
@@ -416,9 +454,53 @@ func CreateDbField(user *model.User, field model.Field) (err error) {
 		fieldType = "int"
 		break
 	}
-	query = `alter table ` + field.TableName + `
+	if field.IsNewField {
+		query = `alter table ` + field.TableName + `
     add ` + field.NameDb + ` ` + fieldType
-	_, err = db.Exec(query)
+		_, err = db.Exec(query)
+		if err != nil {
+			log.Println(err.Error())
+			return err
+		}
+	}
+	if field.IsNewField {
+		query = `insert into utills_catalog_fields (name, catalog_id, name_db, name_type, link_table_id, link_field_view,
+                              is_foreign_field    ) 
+             values  (@name, @catalog_id, @name_db, @name_type, @link_table_id, @link_field_view,
+                  @is_foreign_field   )`
+	} else {
+		query = `select id from utills_catalog_fields where name_db='` + field.NameDb + `'`
+		id := 0
+		db.QueryRow(query).Scan(&id)
+		query = `update utills_catalog_fields set  
+                                 name =@name, catalog_id=@catalog_id, name_db=@name_db, name_type=@name_type, link_table_id=@link_table_id, 
+                                 link_field_view=@link_field_view, is_foreign_field=@is_foreign_field  where id = ` + strconv.Itoa(id)
+	}
+	var stmt *sql.Stmt
+	stmt, _ = db.Prepare(query)
+	isForegn := false
+	linkTableId := 0
+	linkFieldView := ""
+
+	if field.LinkTableId != 0 && field.NameType == "list" {
+		isForegn = true
+		linkTableId = field.LinkTableId
+		linkFieldView = field.LinkFieldView
+	}
+	_, err = stmt.Exec(
+		sql.Named("catalog_id", field.CatalogId),
+		sql.Named("name_db", field.NameDb),
+		sql.Named("name", field.Name),
+		sql.Named("name_type", field.NameType),
+		sql.Named("link_table_id", linkTableId),
+		sql.Named("link_field_view", linkFieldView),
+
+		//sql.Named("is_nullable", true),
+		//sql.Named("is_identity", false),
+		//sql.Named("is_primary_key", false),
+		//sql.Named("is_nullable_db", true),
+		sql.Named("is_foreign_field", isForegn),
+	)
 	if err != nil {
 		log.Println(err.Error())
 	}

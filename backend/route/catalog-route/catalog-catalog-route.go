@@ -116,7 +116,7 @@ func CatalogEditHandler(w http.ResponseWriter, r *http.Request) {
 	if user != nil {
 		keys := r.URL.Query()
 		id, err := strconv.Atoi(keys.Get("id"))
-		data := db_catalog.GetCatalogById(user, id, false)
+		data := db_catalog.GetCatalogById(user, id, false, false)
 		files := []string{
 			"./ui/html/catalog/catalog-create.page.tmpl",
 			"./ui/html/base.layout.tmpl",
@@ -135,11 +135,34 @@ func CatalogEditHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write(data)
 	}
 }
+
+//func GetDbFieldsByCatalogIdHandler(w http.ResponseWriter, r *http.Request) {
+//	user := session.GetSessionData(r)
+//	if user != nil {
+//		type S struct {
+//			Id int `json:"id"`
+//		}
+//		decoder := json.NewDecoder(r.Body)
+//		var param S
+//		err := decoder.Decode(&param)
+//		if err != nil {
+//
+//		}
+//
+//		list, _, err := db_catalog.GetDbTableFields(user, param.Name, true)
+//		data, _ := json.Marshal(list)
+//		w.Write(data)
+//	} else {
+//		data, _ := json.Marshal(route.Message{Text: "not-login"})
+//		w.Write(data)
+//	}
+//}
 func GetDbFieldsHandler(w http.ResponseWriter, r *http.Request) {
 	user := session.GetSessionData(r)
 	if user != nil {
 		type S struct {
-			Name string `json:"name"`
+			Name        string `json:"name"`
+			ByCatalogId bool   `json:"by_catalog_id"`
 		}
 		decoder := json.NewDecoder(r.Body)
 		var param S
@@ -147,7 +170,7 @@ func GetDbFieldsHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 
 		}
-		list, err := db_catalog.GetDbTableFields(user, param.Name, true)
+		list, _, err := db_catalog.GetDbTableFields(user, param.Name, true)
 		data, _ := json.Marshal(list)
 		w.Write(data)
 	} else {
@@ -160,7 +183,7 @@ func GetCatalogFieldsHandler(w http.ResponseWriter, r *http.Request) {
 	if user != nil {
 		keys := r.URL.Query()
 		id, _ := strconv.Atoi(keys.Get("id"))
-		list := db_catalog.GetCatalogById(user, id, false)
+		list := db_catalog.GetCatalogById(user, id, false, false)
 		data, _ := json.Marshal(list)
 		w.Write(data)
 
