@@ -42,9 +42,9 @@
                 {{/*                <a href="/test">LLLLLLLLLL</a>*/}}
                 <ul class="navbar-nav me-auto mb-2 mb-sm-0">
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="dropdown03" data-bs-toggle="dropdown"
+                        <a class="nav-link dropdown-toggle" href="#" id="dropAdmin" data-bs-toggle="dropdown"
                            aria-expanded="false">Админка</a>
-                        <ul class="dropdown-menu" aria-labelledby="dropdown03">
+                        <ul class="dropdown-menu" aria-labelledby="dropAdmin">
                             <li><a class="dropdown-item bi-list-task" href="/task-list-catalog"><span
                                             style="margin-left: 10px">Задачи загрузки</span></a></li>
                             <li><a class="dropdown-item bi-journal-text" href="/catalog-list/?id=Справочники"><span
@@ -75,7 +75,7 @@
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="dropdown03" data-bs-toggle="dropdown"
                            aria-expanded="false">Задачи загрузки</a>
-                        <ul class="dropdown-menu" aria-labelledby="dropdown03">
+                        <ul class="dropdown-menu" aria-labelledby="dropAdmin">
                             <li><a class="dropdown-item" href="/task1">Загрузка Excel</a></li>
                         </ul>
                     </li>
@@ -83,14 +83,14 @@
                         <a onclick="getCatalogList('catalogList', 'Справочники')" class="nav-link dropdown-toggle"
                            href="#" id="dropdown03"
                            data-bs-toggle="dropdown" aria-expanded="false">Справочники</a>
-                        <ul class="dropdown-menu" aria-labelledby="dropdown03" id="catalogList">
+                        <ul class="dropdown-menu" aria-labelledby="dropAdmin" id="catalogList">
                         </ul>
                     </li>
                     <li class="nav-item dropdown">
                         <a onclick="getCatalogList('catalogTask', 'Задачи')" class="nav-link dropdown-toggle" href="#"
                            id="dropdown03"
                            data-bs-toggle="dropdown" aria-expanded="false">Задачи</a>
-                        <ul class="dropdown-menu" aria-labelledby="dropdown03" id="catalogTask">
+                        <ul class="dropdown-menu" aria-labelledby="dropAdmin" id="catalogTask">
                         </ul>
                     </li>
                 </ul>
@@ -103,6 +103,34 @@
     </nav>
     </body>
     <script>
+        getAccess()
+
+        function getAccess() {
+
+            fetch('/api/get-access',
+                {
+                    method: 'POST',
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+
+                })
+                .then(response => response.json())
+                .then((response) => {
+
+                    if (response.text != 'not-login') {
+                        if (response.text === 'isUser') {
+                           $('#dropAdmin').hide()
+                           $('#tabAccess').hide()
+                        }
+
+                    } else {
+                        document.location = '/'
+                    }
+
+
+                })
+        }
         function getCatalogList(elemId, typeEntity) {
             let html = ''
             fetch('/api/catalog-list/?id=' + typeEntity,

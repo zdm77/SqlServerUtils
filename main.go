@@ -29,7 +29,7 @@ func main() {
 	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
 	mux.HandleFunc("/", route.Login)
 	mux.HandleFunc("/main", route.DoLogin)
-
+	mux.HandleFunc("/api/get-access", GetAccess)
 	mux.HandleFunc("/test", Test)
 	mux.HandleFunc("/test2", Test2)
 	mux.HandleFunc("/api/test/", GetTestDataForLocal)
@@ -102,6 +102,21 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
+}
+func GetAccess(w http.ResponseWriter, r *http.Request) {
+	user := session.GetSessionData(r)
+	if user != nil {
+		var data []byte
+		if user.Login == user.SuperAdmin {
+			data, _ = json.Marshal(route.Message{Text: "isAdmin"})
+		} else {
+			data, _ = json.Marshal(route.Message{Text: "isUser"})
+		}
+		w.Write(data)
+	} else {
+		data, _ := json.Marshal(route.Message{Text: "not-login"})
+		w.Write(data)
+	}
 }
 func Home(w http.ResponseWriter, r *http.Request) {
 
