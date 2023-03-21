@@ -164,11 +164,11 @@ func SaveCatalog(user *model.User, param model.Catalog) (err error, id int) {
 
 	return err, id
 }
-func GetCatalogById(user *model.User, id int, forForm, forView bool) (r model.Catalog) {
+func GetCatalogById(user *model.User, id int, forForm, forView, forAdmin bool) (r model.Catalog) {
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
 	//основа
-	query := `select  id, name, table_name, type_entity, order_by_default, order_by_default_asc, p_key_name  from utils_catalog_list where id = @Id`
+	query := `select  id, name, table_name, type_entity, order_by_default, order_by_default_asc, p_key_name  from utils_catalog_list where id = @Id `
 
 	stmt, err := db.Prepare(query)
 	row := stmt.QueryRow(sql.Named("Id", id))
@@ -184,19 +184,23 @@ func GetCatalogById(user *model.User, id int, forForm, forView bool) (r model.Ca
     is_date_modify, coalesce(is_access_check,0) , coalesce(is_foreign_field,0), coalesce(order_by, 0) order_by , 
     coalesce(order_by_form, 0) order_by_form, coalesce(link_field_view, '') link_field_view
 			from utills_catalog_fields where catalog_id=` + strconv.Itoa(id)
+
 	if forForm {
 		query += ` and is_form=1 order by order_by_form`
 	} else {
 		if forView {
+			query += ` order by order_by`
 			//query += ` and is_list=1 `
+		} else {
+			query += ` order by id`
 		}
 
-		query += ` order by order_by`
 	}
 	rows, err := db.Query(query)
 	defer rows.Close()
 	var names []string
 	for rows.Next() {
+
 		countFields++
 		var f model.Field
 		err = rows.Scan(&f.Id, &f.Name, &f.CatalogId, &f.NameDb, &f.NameType, &f.MaxLength, &f.Precision, &f.Scale,

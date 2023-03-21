@@ -113,10 +113,10 @@ alter table utills_catalog_fields
 
 
 alter table utills_catalog_fields
-    add default 0 for order_by_form
-go
+    add default 0 for order_by_form;
+
 
 alter table utills_catalog_fields
-    add default '' for link_field_view
-go
+    add default '' for link_field_view;
+
 

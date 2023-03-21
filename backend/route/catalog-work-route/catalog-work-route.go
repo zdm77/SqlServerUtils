@@ -66,7 +66,7 @@ func CatalogWorkCreateHandler(w http.ResponseWriter, r *http.Request) {
 	if user != nil {
 		keys := r.URL.Query()
 		id, err := strconv.Atoi(keys.Get("id"))
-		data := db_catalog.GetCatalogById(user, id, true, false)
+		data := db_catalog.GetCatalogById(user, id, true, false, false)
 
 		files := []string{
 			"./ui/html/catalog-work/catalog-work-crate.page.tmpl",

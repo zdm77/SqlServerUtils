@@ -2,4 +2,4 @@ DBHost=192.168.1.2
 DBPort=1433
 DataBase=utils
 WebPort=8080
-SuperAdmin=sa2
+SuperAdmin=sa

@@ -116,7 +116,7 @@ func CatalogEditHandler(w http.ResponseWriter, r *http.Request) {
 	if user != nil {
 		keys := r.URL.Query()
 		id, err := strconv.Atoi(keys.Get("id"))
-		data := db_catalog.GetCatalogById(user, id, false, false)
+		data := db_catalog.GetCatalogById(user, id, false, false, true)
 		files := []string{
 			"./ui/html/catalog/catalog-create.page.tmpl",
 			"./ui/html/base.layout.tmpl",
@@ -183,7 +183,7 @@ func GetCatalogFieldsHandler(w http.ResponseWriter, r *http.Request) {
 	if user != nil {
 		keys := r.URL.Query()
 		id, _ := strconv.Atoi(keys.Get("id"))
-		list := db_catalog.GetCatalogById(user, id, false, false)
+		list := db_catalog.GetCatalogById(user, id, false, false, false)
 		data, _ := json.Marshal(list)
 		w.Write(data)
 

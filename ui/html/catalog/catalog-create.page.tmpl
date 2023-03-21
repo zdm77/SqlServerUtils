@@ -69,11 +69,11 @@
                                                class="table table-striped table-bordered table-sm table-responsive">
                                             <tr>
                                                 <td>Наименование</td>
-                                                <td><input class="form-control" id="field_name_name" value=""/></td>
+                                                <td><input onkeyup="validNewField()" class="form-control" id="field_name_name" value=""/></td>
                                             </tr>
                                             <tr>
                                                 <td>Поле БД</td>
-                                                <td><input class="form-control" id="field_name" value=""/></td>
+                                                <td><input onkeyup="validNewField()" class="form-control" id="field_name" value=""/></td>
                                             </tr>
                                             <tr>
                                                 <td>Тип</td>
@@ -109,7 +109,7 @@
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть
                                         </button>
-                                        <button type="button" class="btn btn-primary" onclick="saveField()">Сохранить
+                                        <button type="button" class="btn btn-primary" id="btnSaveField" onclick="saveField()">Сохранить
                                         </button>
                                     </div>
                                 </div>
@@ -132,6 +132,8 @@
             }
         </style>
         <script>
+            let btnSave = document.getElementById('btnSave')
+          //  let btnSaveField = document.getElementById('btnSaveField')
             let myModal = new bootstrap.Modal(document.getElementById('modalField'), {
                 keyboard: false
             })
@@ -142,6 +144,25 @@
                 myModal.show()
                 $('#field_name_name').val('')
                 $('#field_name').val('')
+                $('#field_name').prop('disabled', false);
+                $('#field_type').val('varchar')
+                $('#link_table_view').val('')
+                $('#link_field_view').val('')
+                 $('#link_block').hide()
+                 $('#link_block_table').hide()
+
+
+            }
+            validNewField()
+            function validNewField() {
+
+                if ($('#field_name_name').val() !== "" &&  $('#field_name').val() !== "") {
+
+                    $('#btnSaveField').prop('disabled', false);
+                } else {
+                    $('#btnSaveField').prop('disabled', true);
+                }
+
             }
 
             function editField(nameDb, name, linkTable, linkField, type, isForeign) {
@@ -165,7 +186,7 @@
                 }
                 // $('#field_name_name').val(name)
                 // $('#field_name_name').val(name)
-
+                $('#btnSaveField').prop('disabled', false);
             }
 
             function getFieldsLinkTable(val) {
@@ -214,11 +235,13 @@
                 if (val === 'list') {
                     $('#link_block').show()
                     $('#link_block_table').show()
+                    getFieldsLinkTable()
                 } else {
 
                     $('#link_block').hide()
                     $('#link_block_table').hide()
                 }
+
             }
 
             $('#link_block').hide()
@@ -701,13 +724,20 @@
                 })
                 html += '</tbody>'
                 table.innerHTML = html
+               // $('json_data').wrap('<div class="big-table"></div>');
                 $('#json_data').DataTable({
                     autoWidth: true,
-                    "columnDefs": [{
-                        "targets": [2, 3, 6, 7, 8, 9, 10, 11],
-                        "orderable": false
-                    }],
+                    "ordering": false,
+                    //
+                    // "columnDefs": [{
+                    //     // "targets": [2, 3, 6, 7, 8, 9, 10, 11],
+                    //     "orderable": false,
+                    //     "aTargets" : [ "sorting_disabled" ]
+                    // }],
                     'sDom': 't',
+                    scrollY: 500,
+                    scroller: true,
+
                     // aaSorting: [5]
                 })
             }
@@ -728,7 +758,7 @@
                     })
                     .then(response => response.json())
                     .then((response) => {
-                        console.log(fields)
+
                         if (response.text != 'not-login') {
 
                             response.map(function (item) {

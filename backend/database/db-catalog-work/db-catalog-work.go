@@ -40,7 +40,7 @@ func GetCatalogWorkListByIdJson(user *model.User, id int, isJSONParse bool) (err
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
 
-	catalog := db_catalog.GetCatalogById(user, id, false, true)
+	catalog := db_catalog.GetCatalogById(user, id, false, true, false)
 	var data [][]string
 	var headers []string
 	var isList []bool
@@ -511,7 +511,7 @@ func SaveCatalogWork(user *model.User, catalog model.Catalog) (err error, id int
 func GetEntityByCatalogId(user *model.User, catalogId, entityId int) (err error, data model.Catalog) {
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
-	catalog := db_catalog.GetCatalogById(user, catalogId, true, false)
+	catalog := db_catalog.GetCatalogById(user, catalogId, true, false, false)
 
 	var fields []string
 	query := `select `
@@ -557,7 +557,7 @@ func GetEntityByCatalogId(user *model.User, catalogId, entityId int) (err error,
 }
 func DeleteCatalogWorkList(user *model.User, id, catalogId int) (err error) {
 
-	catalog := db_catalog.GetCatalogById(user, catalogId, false, false)
+	catalog := db_catalog.GetCatalogById(user, catalogId, false, false, false)
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
 	query := `delete from  ` + catalog.TableName + ` where ` + catalog.PKeyName + ` = ` + strconv.Itoa(id)
