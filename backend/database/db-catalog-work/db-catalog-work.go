@@ -377,7 +377,7 @@ func GetCatalogWorkListByIdJson(user *model.User, id int, isJSONParse bool) (err
 //	return err, result
 //}
 func SaveCatalogWork(user *model.User, catalog model.Catalog) (err error, id int) {
-	_, keyName, _ := db_catalog.GetDbTableFields(user, catalog.TableName, false)
+	_, keyName, _ := db_catalog.GetDbTableFields(user, catalog.TableName, false, false)
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
 	var fieldsA []string
@@ -612,7 +612,7 @@ func GetCatalogAccessRecord(user *model.User, id int, table string) (err error, 
 func SaveCatalogAccessRecord(user *model.User, id int, table, access string) (err error) {
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
-	_, keyName, _ := db_catalog.GetDbTableFields(user, table, false)
+	_, keyName, _ := db_catalog.GetDbTableFields(user, table, false, false)
 	query := `update ` + table + ` set access = '` + access + `'  where ` + keyName + ` = ` + strconv.Itoa(id)
 	_, err = db.Exec(query)
 	if err != nil {

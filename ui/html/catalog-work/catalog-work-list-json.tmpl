@@ -8,24 +8,34 @@
             {{/*            {{template "list-panel"}}*/}}
             <ul class="list-group list-group-flush">
                 <li class="list-group-item">
-                    <button class="btn btn-primary bi bi-plus-circle "
-                            style="font-size:14px;"
-                            onclick="create()">
-                        <span style="margin-left: 3px">Создать</span></button>
-                    <button class="btn btn-success bi bi-arrow-counterclockwise "
-                            style="font-size:14px;"
-                            onclick="refresh()">
-                        <span style="margin-left: 3px">Обновить</span></button>
-                    <button id="buttonClear" class="btn btn-outline-success bi bi-x-circle "
-                            style="font-size:14px;"
-                            onclick="clearFind()">
-                        <span style="margin-left: 3px">Очистить фильтр</span></button>
+{{/*                    <button class="btn btn-primary bi bi-plus-circle "*/}}
+{{/*                            style="font-size:14px;"*/}}
+{{/*                            onclick="create()">*/}}
+{{/*                        <span style="margin-left: 3px">Создать</span></button>*/}}
+{{/*                    <button class="btn btn-success bi bi-arrow-counterclockwise "*/}}
+{{/*                            style="font-size:14px;"*/}}
+{{/*                            onclick="refresh()">*/}}
+{{/*                        <span style="margin-left: 3px">Обновить</span></button>*/}}
+{{/*                    <button onclick='$(".buttons-excel")[0].click();' class="btn" >*/}}
+{{/*                        <span>Excel</span>*/}}
+{{/*                    </button>*/}}
+                    {{/*                    <button class="btn btn-success bi bi-file-earmark-excel "*/}}
+{{/*                            style="font-size:14px;"*/}}
+{{/*                            onclick="doExcel()">*/}}
+{{/*                        <span style="margin-left: 3px">В Excel</span></button>*/}}
+{{/*                    <button id="buttonClear" class="btn btn-outline-success bi bi-x-circle "*/}}
+{{/*                            style="font-size:14px;"*/}}
+{{/*                            onclick="clearFind()">*/}}
+{{/*                        <span style="margin-left: 3px">Очистить фильтр</span></button>*/}}
                 </li>
                 <li class="list-group-item" id="li-table">
                 </li>
             </ul>
         </div>
         <script>
+            function doExcel(){
+                console.log()
+            }
             function create() {
                 document.location = '/catalog-work-create/?id=' + catalogId
             }
@@ -112,9 +122,16 @@
                     .then(response => response.json())
                     .then((response) => {
                         if (response.text != 'not-login') {
-                            jsonData = {
-                                "data":  JSON.parse(response.json),
-                            }
+                            console.log(response)
+                           if (response.json) {
+                               jsonData = {
+                                   "data": JSON.parse(response.json),
+                               }
+                           } else {
+                               jsonData = {
+                                   "data": [],
+                               }
+                           }
                             fieldNames = response.field_names
                             headers = response.headers
                             document.getElementById('cardHeader').innerText = response.name_catalog
@@ -145,7 +162,9 @@
                                         }
                                     }
                                 } else {
-                                    html += '<td></td>'
+                                    html += '<td>'
+                                    html += '<button onclick="clearFind()" class="btn btn-outline-success bi bi-x-circle"></button>'
+                                    html += '</td>'
                                 }
                             }
                             html += '</tr>'
@@ -154,10 +173,10 @@
                             let isHref = false
                             for (let i = 0; i < response.headers.length; i++) {
                                 let header = response.headers[i]
-                                html += '<th>' + header + '</th>'
+                                html += '<th style="text-align: left!important;">' + header + '</th>'
                                 let fieldName = response.field_names[i]
                                 if (fieldName && fieldName !== 'is_delete') {
-                                    if (fieldName === fieldId) {
+                                    if (fieldName === fieldId || !response.is_list[i]) {
                                         columns.push({
                                             visible: false,
                                             data: fieldName,
@@ -179,7 +198,7 @@
                                         } else {
                                             let typeCell = response.types[i]
                                             columns.push({
-                                                className: typeCell === 'date' || typeCell === 'bit' ? "text-center" : "",
+                                                // className: typeCell === 'date' || typeCell === 'bit' || typeCell ==='int' ? "text-center" : "",
                                                 data: fieldName,
                                                 type: typeCell === 'bit' ? 'html' : '',
 
@@ -226,10 +245,80 @@
                             html += '</thead>'
 
                             table.innerHTML = html
+                            let title =  $('#cardHeader').html()
                             $('#json_data').DataTable({
                                 language: {
                                     url: '/static/ru.json',
                                 },
+                                dom: 'Bfrtip',
+
+                                buttons: [
+                                    {
+                                        text: 'Создать',
+
+                                        className: 'btn btn-primary bi bi-plus-circle ' ,
+                                        action: function ( e, dt, node, config ) {
+                                            // dt.ajax.reload();
+                                            create()
+                                        }
+                                    },
+                                    {
+                                        text: 'Обновить',
+
+                                        className: 'btn btn-success bi bi-arrow-counterclockwise' ,
+                                        action: function ( e, dt, node, config ) {
+                                            // dt.ajax.reload();
+                                            create()
+                                        }
+                                    },
+                                    {
+                                        extend: 'copy',
+
+                                        className: 'dt-button btn btn-secondary bi bi-clipboard' ,
+
+                                    },
+                                   //  'copy',
+                                   //  {
+                                   //      extend: 'copy',
+                                   //      className: 'btn btn-success bi bi-file-earmark-excel',
+                                   //  },
+                                    // 'csv',
+                                    {
+
+                                        extend: 'excel',
+                                        title: title,
+                                        className: 'btn btn-success bi bi-file-earmark-excel',
+                                        excelStyles: [                      // Add an excelStyles definition
+                                            {
+                                                template: "green_medium",   // Apply the "green_medium" template
+                                            },
+                                            {
+                                                cells: "sh",                // Use Smart References (s) to target the header row (h)
+                                                style: {                    // The style definition
+                                                    font: {                 // Style the font
+                                                        size: 14,           // Size 14
+                                                        b: false,           // Turn off the default bolding of the header row
+                                                    },
+                                                    fill: {                 // Style the cell fill
+                                                        pattern: {          // Add a pattern (default is solid)
+                                                            color: "1C3144" // Define the fill color
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        ],
+                                    },
+
+                                    // {
+                                    //     extend: 'pdf',
+                                    //     title:  title,
+                                    // },
+                                    // {
+                                    //     extend: 'print',
+                                    //     title: title,
+                                    // },
+
+                                ],
                                 data: jsonData.data,
                                 columns: columns,
                                 headers: html,
@@ -237,11 +326,13 @@
                                 pagingType: "simple",
                                 "bLengthChange": false,
                                 processing: true,
-                                'sDom': 't',
+                                //'sDom': 't',
                                 scrollY: 700,
                                 scroller: true,
-                                aaSorting: []
+                                aaSorting: [],
+                              //  searching: false
                             })
+
                             $.fn.dataTable.ext.search.push(function (settings, data, index, rowData, counter) {
 
                                 if (arrFind.length === 0) return true
@@ -326,5 +417,10 @@
 
             })
         </script>
+{{/*        <style>*/}}
+{{/*            th {*/}}
+{{/*                text-align: left!important;*/}}
+{{/*            }*/}}
+{{/*        </style>*/}}
     </main>
 {{end}}

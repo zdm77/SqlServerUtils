@@ -170,7 +170,7 @@ func GetDbFieldsHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 
 		}
-		list, _, err := db_catalog.GetDbTableFields(user, param.Name, true)
+		list, _, err := db_catalog.GetDbTableFields(user, param.Name, true, false)
 		data, _ := json.Marshal(list)
 		w.Write(data)
 	} else {

@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func GetDbTableFields(user *model.User, tableNameOrCatalogId string, byCatalogId bool) (fields []model.Field, keyName string, err error) {
+func GetDbTableFields(user *model.User, tableNameOrCatalogId string, byCatalogId bool, accessShow bool) (fields []model.Field, keyName string, err error) {
 	db, err := database.GetDb(user.ConnString)
 	defer db.Close()
 	var query string
@@ -50,7 +50,11 @@ WHERE
 		if f.IsPrimaryKey {
 			keyName = f.NameDb
 		}
-		if f.NameDb != "access" {
+		if !accessShow {
+			if f.NameDb != "access" {
+				fields = append(fields, f)
+			}
+		} else {
 			fields = append(fields, f)
 		}
 	}
@@ -96,7 +100,7 @@ func SaveCatalog(user *model.User, param model.Catalog) (err error, id int) {
 	defer db.Close()
 	var query string
 	var stmt *sql.Stmt
-	fields, keyFieldName, _ := GetDbTableFields(user, param.TableName, false)
+	fields, keyFieldName, _ := GetDbTableFields(user, param.TableName, false, true)
 	//проверяем, есть ли поле доступа
 	isAccess := false
 	for _, f := range fields {
@@ -109,7 +113,7 @@ func SaveCatalog(user *model.User, param model.Catalog) (err error, id int) {
     add access ntext`
 		_, err = db.Exec(query)
 		if err != nil {
-			log.Println(err.Error())
+			//log.Println(err.Error())
 		}
 	}
 	if param.Id == 0 {
@@ -177,7 +181,7 @@ func GetCatalogById(user *model.User, id int, forForm, forView, forAdmin bool) (
 	if err != nil {
 		log.Println(err.Error())
 	}
-	fieldsDb, _, err := GetDbTableFields(user, r.TableName, false)
+	fieldsDb, _, err := GetDbTableFields(user, r.TableName, false, false)
 	//табличная часть
 	query = `select id, coalesce(name,''), catalog_id, name_db, name_type, coalesce(max_length,0), coalesce(precision,0), coalesce(scale,0), is_nullable, is_identity, 
        is_primary_key, is_nullable_db, coalesce(is_list,0), coalesce(is_form,0), link_table_id, is_user_create, is_user_modify, is_date_create, 
@@ -403,7 +407,7 @@ func GetLinkList(user *model.User, id int, fieldLink, catalogIdFrom string) (err
 	//доступ
 
 	isAccess := false
-	_, keyFieldName, _ := GetDbTableFields(user, tableName, false)
+	_, keyFieldName, _ := GetDbTableFields(user, tableName, false, false)
 	//if user.Login != user.SuperAdmin {
 	linkField := "name"
 	query = `select  is_access_check, link_field_view from utills_catalog_fields where catalog_id = ` + catalogIdFrom + ` and name_db = '` + fieldLink + `' `
@@ -415,9 +419,15 @@ func GetLinkList(user *model.User, id int, fieldLink, catalogIdFrom string) (err
 		query += ` ,access `
 	}
 	query += ` from ` + tableName
-	query += " order by " + orderByDefault + " " + orderByDefaultAsc + " "
+	if orderByDefault != "" {
+		query += " order by " + orderByDefault + " " + orderByDefaultAsc + " "
+	}
 	rows, err := db.Query(query)
-
+	if err != nil {
+		log.Println(err.Error())
+		log.Println(query)
+		return err, nil
+	}
 	defer rows.Close()
 	for rows.Next() {
 		var d model.LinkTable

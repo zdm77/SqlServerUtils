@@ -11,7 +11,12 @@
                 <ul class="list-group list-group-flush">
                     <li class="list-group-item">
                         <div class="col-6">
-                            {{template "save"}}
+                            <button id="btnSave" style="margin-left: 15px;font-size:14px;" class="btn btn-primary bi bi-save" onclick="save()">
+                                <span style="margin-left: 3px">Сохранить</span>
+                            </button>
+                            <button id="back" style="margin-left: 15px;font-size:14px;" class="btn bi bi-skip-backward  bg-success text-light" onclick="back() ">
+                                <span style="margin-left: 3px">Назад</span>
+                            </button>
                         </div>
                     </li>
                     <li class="list-group-item">
@@ -36,7 +41,12 @@
                             <ul class="list-group list-group-flush">
                                 <li class="list-group-item">
                                     <div class="col-6">
-                                        {{template "save"}}
+                                        <button id="btnSave" style="margin-left: 15px;font-size:14px;" class="btn btn-primary bi bi-save" onclick="save()">
+                                            <span style="margin-left: 3px">Сохранить</span>
+                                        </button>
+                                        <button id="back" style="margin-left: 15px;font-size:14px;" class="btn bi bi-skip-backward  bg-success text-light" onclick="back() ">
+                                            <span style="margin-left: 3px">Назад</span>
+                                        </button>
                                     </div>
                                 </li>
                                 <li class="list-group-item">
@@ -72,7 +82,10 @@
             {{end}}
         </div>
         <script>
+            function back() {
 
+                location.href='/catalog-work-list/?id='+id
+            }
             const table = document.getElementById('json_data')
             const tableAccess = document.getElementById('table_access')
 
