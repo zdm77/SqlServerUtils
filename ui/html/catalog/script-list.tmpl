@@ -1,0 +1,98 @@
+{{template "base" .}}
+
+{{define "main"}}
+    <main class="form-main">
+        <div class="card">
+            <div class="card-header">
+                Скрипты
+            </div>
+            <ul class="list-group list-group-flush">
+
+                <li class="list-group-item">
+{{/*                    {{template "create"}}*/}}
+                    <button class="btn btn-success bi bi-arrow-counterclockwise "
+                            style="font-size:14px;"
+                            onclick="refresh()">
+                        <span style="margin-left: 3px">Обновить</span></button>
+                </li>
+                <li class="list-group-item">
+                    <table id="tableScript" class="table table-striped table-bordered table-sm table-responsive"
+                           style="width:100%"></table>
+                </li>
+            </ul>
+        </div>
+        <script>
+            function create() {
+                document.location = '/catalog-create/?typeId=' + typeEntity
+                // document.location='/catalog-create'
+            }
+
+            renderData()
+            function refresh() {
+                renderData()
+            }
+            function renderData() {
+
+                fetch('/api/catalog/script-list/' ,
+                    {
+                        method: 'POST',
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+
+                    })
+                    .then(response => response.json())
+                    .then((response) => {
+                        console.log(response)
+                        if (response.text != 'not-login') {
+                            let table = document.getElementById("tableScript");
+                            let htmlData = '<thead><tr><th>Наименование</th><th>Путь</th><th></th></tr></thead>';
+                            htmlData += '<tbody>'
+                            response.map(function (item) {
+                                htmlData += '<tr>' +
+                                    '<td><a href="/script-edit/?id=$id">' + item.name + '</a> </td>' +
+                                    '<td>' + item.script_name + '</td>' +
+                                    // '<td  width="32px"><i class="bi-trash text-danger" style="cursor: pointer" onclick="deleteTask(' + item.id + ')"></i></td>' +
+                                    '</tr> ';
+
+                                htmlData = htmlData.replaceAll("$id", item.id)
+                            })
+                            htmlData += '</tbody>'
+
+                            table.innerHTML = htmlData;
+                            //   $('#qqq').DataTable();
+                        } else {
+                            document.location = '/'
+                        }
+                    });
+            }
+
+            function deleteTask(id) {
+                const isDel = confirm('Вы действительно хотите удалить запись? ')
+                if (isDel) {
+                    fetch('/api/catalog-list/delete/?id=' + id)
+                        .then(response => response.json())
+                        .then((response) => {
+                            if (response.text !== 'not-login') {
+                                if (response.text === 'ok') {
+                                    renderData()
+                                    showMessage('Данные удалены')
+
+
+                                } else {
+                                    showError(response.text)
+
+                                }
+                            } else {
+                                document.location = '/'
+                            }
+                        })
+                }
+            }
+
+            // $(document).ready(function () {
+
+            //});
+        </script>
+    </main>
+{{end}}

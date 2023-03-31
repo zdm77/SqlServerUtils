@@ -1,11 +1,12 @@
 package model
 
 type User struct {
-	Login      string
-	IsLogin    bool
-	ConnString string
-	DbName     string
-	SuperAdmin string
+	Login         string
+	IsLogin       bool
+	ConnString    string
+	DbName        string
+	SuperAdmin    string
+	ScriptCatalog string
 }
 
 type AccessRecord struct {

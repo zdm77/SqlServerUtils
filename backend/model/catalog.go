@@ -47,3 +47,8 @@ type LinkTable struct {
 	Name   string `json:"name"`
 	Access string `json:"access"`
 }
+type Script struct {
+	Id         int    `json:"id"`
+	Name       string `json:"name"`
+	ScriptName string `json:"script_name"`
+}

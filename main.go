@@ -13,6 +13,7 @@ import (
 	"sqlutils/backend/route"
 	catalog_route "sqlutils/backend/route/catalog-route"
 	catalog_work_route "sqlutils/backend/route/catalog-work-route"
+	script_route "sqlutils/backend/route/script-route"
 	"sqlutils/backend/route/task-route"
 	"sqlutils/backend/session"
 	"strconv"
@@ -72,6 +73,14 @@ func main() {
 	mux.HandleFunc("/api/catalog-work-save", catalog_work_route.CatalogWorkSaveHandler)
 	mux.HandleFunc("/api/catalog-work-list", catalog_work_route.CatalogGetWorkListHandler)
 
+	//Скрипты
+	//Справочник
+	mux.HandleFunc("/catalog/script-list/", script_route.ScriptListHandler)
+	mux.HandleFunc("/api/catalog/script-list/", script_route.GetCatalogScriptListHandler)
+	mux.HandleFunc("/script-edit/", script_route.ScriptEditHandler)
+	mux.HandleFunc("/api/script-save", script_route.ScriptSaveHandler)
+
+	//
 	mux.HandleFunc("/api/upload", task_route.TaskUploadHandler)
 	mux.HandleFunc("/api/task-exe", task_route.TaskExeHandler)
 	//доступ

@@ -3,3 +3,4 @@ DBPort=1433
 DataBase=utils
 WebPort=8080
 SuperAdmin=sa
+ScriptCatalog=D:\TmpBbs\111
