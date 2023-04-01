@@ -29,6 +29,23 @@ func ScriptListHandler(w http.ResponseWriter, r *http.Request) {
 
 	tpl.Execute(w, nil)
 }
+func ScriptListWorkHandler(w http.ResponseWriter, r *http.Request) {
+	files := []string{
+		"./ui/html/script-work/script-work.tmpl",
+		"./ui/html/base.layout.tmpl",
+		"./ui/html/top.layout.tmpl",
+		"./ui/html/controls/create.tmpl",
+		"./ui/html/controls/table.tmpl",
+		"./ui/html/controls/list-panel.tmpl",
+	}
+
+	tpl, err := template.ParseFiles(files...)
+	if err != nil {
+		log.Println(err.Error())
+	}
+
+	tpl.Execute(w, nil)
+}
 func GetCatalogScriptListHandler(w http.ResponseWriter, r *http.Request) {
 	user := session.GetSessionData(r)
 	if user != nil {
@@ -83,5 +100,26 @@ func ScriptSaveHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
+	}
+}
+
+func ScriptExeHandler(w http.ResponseWriter, r *http.Request) {
+	user := session.GetSessionData(r)
+	if user != nil {
+		keys := r.URL.Query()
+		id, _ := strconv.Atoi(keys.Get("id"))
+
+		_, isErr := db_catalog.ExeScript(user, id)
+		if isErr {
+			data, _ := json.Marshal(route.Message{Text: "Ошибка"})
+			w.Write(data)
+		} else {
+			data, _ := json.Marshal(route.Message{Text: "ok"})
+			w.Write(data)
+		}
+
+	} else {
+		data, _ := json.Marshal(route.Message{Text: "not-login"})
+		w.Write(data)
 	}
 }

@@ -7,9 +7,8 @@
                 Скрипты
             </div>
             <ul class="list-group list-group-flush">
-
                 <li class="list-group-item">
-{{/*                    {{template "create"}}*/}}
+                    {{/*                    {{template "create"}}*/}}
                     <button class="btn btn-success bi bi-arrow-counterclockwise "
                             style="font-size:14px;"
                             onclick="refresh()">
@@ -21,6 +20,15 @@
                 </li>
             </ul>
         </div>
+        <div class="modal" id="modalLoad" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+             aria-labelledby="staticBackdropLabel" aria-hidden="true">
+            aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-body">Выполнение задачи</div>
+                </div>
+            </div>
+        </div>
         <script>
             function create() {
                 document.location = '/catalog-create/?typeId=' + typeEntity
@@ -28,12 +36,14 @@
             }
 
             renderData()
+
             function refresh() {
                 renderData()
             }
+
             function renderData() {
 
-                fetch('/api/catalog/script-list/' ,
+                fetch('/api/catalog/script-list/',
                     {
                         method: 'POST',
                         headers: {
@@ -46,13 +56,14 @@
                         console.log(response)
                         if (response.text != 'not-login') {
                             let table = document.getElementById("tableScript");
-                            let htmlData = '<thead><tr><th>Наименование</th><th>Путь</th></tr></thead>';
+                            let htmlData = '<thead><tr><th>Наименование</th><th width="100"></th></tr></thead>';
                             htmlData += '<tbody>'
                             response.map(function (item) {
                                 htmlData += '<tr>' +
-                                    '<td><a href="/script-edit/?id=$id">' + item.name + '</a> </td>' +
-                                    '<td>' + item.script_name + '</td>' +
-                                    // '<td  width="32px"><i class="bi-trash text-danger" style="cursor: pointer" onclick="deleteTask(' + item.id + ')"></i></td>' +
+                                    '<td>' + item.name + ' </td>' +
+                                    // '<td>' + item.script_name + '</td>' +
+                                    //  '<td  width="32px"><button class="button btn-secondary bi-play" style="cursor: pointer" onclick="runScript(' + item.id + ')">Выполнить</button></td>' +
+                                    '<td><button id=btnExe' + item.id + ' type="button"  class="btn btn-secondary  bi-play" onclick="runScript(' + item.id + ')">Выполнить</button></td>' +
                                     '</tr> ';
 
                                 htmlData = htmlData.replaceAll("$id", item.id)
@@ -67,27 +78,36 @@
                     });
             }
 
-            function deleteTask(id) {
-                const isDel = confirm('Вы действительно хотите удалить запись? ')
-                if (isDel) {
-                    fetch('/api/catalog-list/delete/?id=' + id)
-                        .then(response => response.json())
-                        .then((response) => {
-                            if (response.text !== 'not-login') {
-                                if (response.text === 'ok') {
-                                    renderData()
-                                    showMessage('Данные удалены')
+            function runScript(id) {
+                // const btn = document.getElementById('btnExe' + id)
+                // btn.disabled = true
+                //const isDel = confirm('Вы действительно хотите удалить запись? ')
+                let myModal = new bootstrap.Modal(document.getElementById('modalLoad'), {
+                    keyboard: false
+                })
+                myModal.show()
+                fetch('/api/script-exe/?id=' + id)
+                    .then(response => response.json())
+                    .then((response) => {
+                        myModal.hide()
+                        if (response.text !== 'not-login') {
+                            if (response.text === 'ok') {
+
+                                showMessage('Скрипт выполнен')
 
 
-                                } else {
-                                    showError(response.text)
-
-                                }
                             } else {
-                                document.location = '/'
+                               showError("Ошибка выполнения скрипта")
+                                //myModal.hide()
                             }
-                        })
-                }
+                        } else {
+                            document.location = '/'
+                        }
+                    })
+                    .catch((e) => {
+                        myModal.hide()
+                    })
+
             }
 
             // $(document).ready(function () {

@@ -1,11 +1,16 @@
 package db_catalog
 
 import (
+	"bytes"
+	"fmt"
+	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sqlutils/backend/database"
 	"sqlutils/backend/model"
 	"strconv"
+	"strings"
 )
 
 func GetCatalogScript(user *model.User) (result []model.Script) {
@@ -16,17 +21,32 @@ func GetCatalogScript(user *model.User) (result []model.Script) {
 		PathF string
 	}
 	var files []File
-	filepath.Walk(dir,
-		func(path string, info os.FileInfo, err error) error {
-			if !info.IsDir() {
-				files = append(files, File{
-					Dir:   filepath.Dir(path),
-					Name:  filepath.Base(path),
-					PathF: path,
-				})
+	dirO, _ := os.ReadDir(dir)
+	for _, d := range dirO {
+		if d.IsDir() {
+			dr, _ := os.ReadDir(filepath.Join(dir, d.Name()))
+			for _, dd := range dr {
+				if !dd.IsDir() {
+					files = append(files, File{
+						Dir:   filepath.Join(dir, d.Name()),
+						Name:  dd.Name(),
+						PathF: filepath.Join(dir, d.Name(), dd.Name()),
+					})
+				}
 			}
-			return nil
-		})
+		}
+	}
+	//filepath.Walk(dir,
+	//	func(path string, info os.FileInfo, err error) error {
+	//		if !info.IsDir() {
+	//			files = append(files, File{
+	//				Dir:   filepath.Dir(path),
+	//				Name:  filepath.Base(path),
+	//				PathF: path,
+	//			})
+	//		}
+	//		return nil
+	//	})
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
 	var query string
@@ -62,4 +82,33 @@ func SaveScript(user *model.User, script model.Script) () {
 	defer db.Close()
 	query := `update utils_script set name ='` + script.Name + `' where id = ` + strconv.Itoa(script.Id)
 	db.Exec(query)
+}
+func ExeScript(user *model.User, scriptId int) (err error, isErr bool) {
+	db, _ := database.GetDb(user.ConnString)
+	defer db.Close()
+	query := `select  script_name  from utils_script  where id = ` + strconv.Itoa(scriptId)
+	var script string
+	err = db.QueryRow(query).Scan(&script)
+	if err != nil {
+		log.Println(err.Error())
+		return err, true
+	}
+	exe := user.PythonExe
+	cmd := exec.Command(exe, script)
+	out := bytes.Buffer{}
+	cmd.Stderr = &out
+	err = cmd.Run()
+
+	isErr = strings.Contains(strings.ToUpper(out.String()), "ERROR")
+	if isErr {
+		fmt.Println(out.String())
+	}
+
+	if isErr {
+
+		log.Println("Буфер:" + out.String())
+		err = fmt.Errorf("Ошибка выполнения скрипта")
+		return err, isErr
+	}
+	return err, isErr
 }

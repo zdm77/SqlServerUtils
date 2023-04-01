@@ -7,6 +7,7 @@ type User struct {
 	DbName        string
 	SuperAdmin    string
 	ScriptCatalog string
+	PythonExe     string
 }
 
 type AccessRecord struct {

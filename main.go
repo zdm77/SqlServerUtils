@@ -76,9 +76,11 @@ func main() {
 	//Скрипты
 	//Справочник
 	mux.HandleFunc("/catalog/script-list/", script_route.ScriptListHandler)
+	mux.HandleFunc("/catalog/script-list-work/", script_route.ScriptListWorkHandler)
 	mux.HandleFunc("/api/catalog/script-list/", script_route.GetCatalogScriptListHandler)
 	mux.HandleFunc("/script-edit/", script_route.ScriptEditHandler)
 	mux.HandleFunc("/api/script-save", script_route.ScriptSaveHandler)
+	mux.HandleFunc("/api/script-exe/", script_route.ScriptExeHandler)
 
 	//
 	mux.HandleFunc("/api/upload", task_route.TaskUploadHandler)

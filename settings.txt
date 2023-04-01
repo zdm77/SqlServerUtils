@@ -4,3 +4,4 @@ DataBase=utils
 WebPort=8080
 SuperAdmin=sa
 ScriptCatalog=D:\TmpBbs\111
+PythonExe=D:\_SOFT\PDF\cpdf-binaries-master\Windows32bit\cpdf.exe

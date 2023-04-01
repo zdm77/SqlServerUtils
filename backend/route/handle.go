@@ -43,6 +43,7 @@ func DoLogin(w http.ResponseWriter, r *http.Request) {
 	dbName := ""
 	superAdmin := ""
 	scriptCatalog := ""
+	pythonExe := ""
 	file, err := os.Open("settings.txt")
 	if err != nil {
 		log.Fatal(err.Error())
@@ -70,6 +71,10 @@ func DoLogin(w http.ResponseWriter, r *http.Request) {
 		if cont {
 			scriptCatalog = strings.Split(sc.Text(), "=")[1]
 		}
+		cont = strings.Contains(sc.Text(), "PythonExe")
+		if cont {
+			pythonExe = strings.Split(sc.Text(), "=")[1]
+		}
 	}
 	connStr := database.SetParam(server, login, password, port, dbName)
 	db, err := database.GetDb(connStr)
@@ -89,6 +94,7 @@ func DoLogin(w http.ResponseWriter, r *http.Request) {
 		userSession.DbName = dbName
 		userSession.SuperAdmin = superAdmin
 		userSession.ScriptCatalog = scriptCatalog
+		userSession.PythonExe = pythonExe
 		session.Save(userSession, w, r)
 		files := []string{
 
