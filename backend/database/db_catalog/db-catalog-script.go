@@ -27,11 +27,15 @@ func GetCatalogScript(user *model.User) (result []model.Script) {
 			dr, _ := os.ReadDir(filepath.Join(dir, d.Name()))
 			for _, dd := range dr {
 				if !dd.IsDir() {
-					files = append(files, File{
-						Dir:   filepath.Join(dir, d.Name()),
-						Name:  dd.Name(),
-						PathF: filepath.Join(dir, d.Name(), dd.Name()),
-					})
+					arr := strings.Split(dd.Name(), ".")
+					if arr[1] == "py" {
+						files = append(files, File{
+							Dir:   filepath.Join(dir, d.Name()),
+							Name:  dd.Name(),
+							PathF: filepath.Join(dir, d.Name(), dd.Name()),
+						})
+					}
+
 				}
 			}
 		}
@@ -77,7 +81,7 @@ func GetScriptById(user *model.User, id int) (r model.Script) {
 	db.QueryRow(query).Scan(&r.Id, &r.Name, &r.ScriptName)
 	return r
 }
-func SaveScript(user *model.User, script model.Script) () {
+func SaveScript(user *model.User, script model.Script) {
 	db, _ := database.GetDb(user.ConnString)
 	defer db.Close()
 	query := `update utils_script set name ='` + script.Name + `' where id = ` + strconv.Itoa(script.Id)
