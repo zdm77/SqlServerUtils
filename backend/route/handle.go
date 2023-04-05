@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"sqlutils/backend/database"
+	"sqlutils/backend/database/db_catalog"
 	"sqlutils/backend/model"
 	"sqlutils/backend/session"
 	"strings"
@@ -36,6 +37,7 @@ func DoLogin(w http.ResponseWriter, r *http.Request) {
 	if user != nil && user.IsLogin {
 		fmt.Println("")
 	}
+
 	login := r.FormValue("login")
 	password := r.FormValue("passwd")
 	server := ""
@@ -96,6 +98,7 @@ func DoLogin(w http.ResponseWriter, r *http.Request) {
 		userSession.ScriptCatalog = scriptCatalog
 		userSession.PythonExe = pythonExe
 		session.Save(userSession, w, r)
+		db_catalog.DeleteNotPyScript(connStr)
 		files := []string{
 
 			"./ui/html/home.page.tmpl",

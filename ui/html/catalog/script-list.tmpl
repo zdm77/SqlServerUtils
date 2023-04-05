@@ -43,7 +43,6 @@
                     })
                     .then(response => response.json())
                     .then((response) => {
-                        console.log(response)
                         if (response.text != 'not-login') {
                             let table = document.getElementById("tableScript");
                             let htmlData = '<thead><tr><th>Наименование</th><th>Путь</th></tr></thead>';

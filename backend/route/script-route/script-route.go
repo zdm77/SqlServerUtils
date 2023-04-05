@@ -12,6 +12,26 @@ import (
 	"strconv"
 )
 
+func ScriptAccessHandler(w http.ResponseWriter, r *http.Request) {
+	user := session.GetSessionData(r)
+	if user != nil {
+		decoder := json.NewDecoder(r.Body)
+		type Param struct {
+			Id int `json:"id"`
+		}
+		var param Param
+		err := decoder.Decode(&param)
+		if err != nil {
+			log.Println(err.Error())
+		}
+		_, list := db_catalog.GetAccessScript(user, param.Id)
+		data, _ := json.Marshal(list)
+		w.Write(data)
+	} else {
+		data, _ := json.Marshal(route.Message{Text: "not-login"})
+		w.Write(data)
+	}
+}
 func ScriptListHandler(w http.ResponseWriter, r *http.Request) {
 	files := []string{
 		"./ui/html/catalog/script-list.tmpl",
@@ -118,6 +138,32 @@ func ScriptExeHandler(w http.ResponseWriter, r *http.Request) {
 			w.Write(data)
 		}
 
+	} else {
+		data, _ := json.Marshal(route.Message{Text: "not-login"})
+		w.Write(data)
+	}
+}
+func SaveAccessScriptHandler(w http.ResponseWriter, r *http.Request) {
+	user := session.GetSessionData(r)
+	if user != nil {
+		decoder := json.NewDecoder(r.Body)
+		type Param struct {
+			Id     int    `json:"id"`
+			Access string `json:"access"`
+		}
+		var param Param
+		err := decoder.Decode(&param)
+		if err != nil {
+			log.Println(err.Error())
+		}
+		err = db_catalog.SaveScriptAccess(user, param.Id, param.Access)
+		var data []byte
+		if err != nil {
+			data, _ = json.Marshal(route.Message{Text: err.Error()})
+		} else {
+			data, _ = json.Marshal(route.Message{Text: "ok"})
+		}
+		w.Write(data)
 	} else {
 		data, _ := json.Marshal(route.Message{Text: "not-login"})
 		w.Write(data)

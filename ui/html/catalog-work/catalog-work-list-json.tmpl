@@ -122,7 +122,6 @@
                     .then(response => response.json())
                     .then((response) => {
                         if (response.text != 'not-login') {
-                            console.log(response)
                            if (response.json) {
                                jsonData = {
                                    "data": JSON.parse(response.json),

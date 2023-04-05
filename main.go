@@ -86,8 +86,12 @@ func main() {
 	mux.HandleFunc("/api/upload", task_route.TaskUploadHandler)
 	mux.HandleFunc("/api/task-exe", task_route.TaskExeHandler)
 	//доступ
+	//запись справочника/задачи
 	mux.HandleFunc("/api/get-access-catalog-record", catalog_work_route.CatalogAccessRecordHandler)
 	mux.HandleFunc("/api/save-access-catalog-record", catalog_work_route.SaveAccessRecordHandler)
+	//скрипта
+	mux.HandleFunc("/api/get-access-script-list", script_route.ScriptAccessHandler)
+	mux.HandleFunc("/api/save-access-script", script_route.SaveAccessScriptHandler)
 	//mux.HandleFunc("/login", route.Login)
 	host, _ := os.Hostname()
 

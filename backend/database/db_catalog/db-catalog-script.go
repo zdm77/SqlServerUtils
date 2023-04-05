@@ -13,6 +13,18 @@ import (
 	"strings"
 )
 
+func DeleteNotPyScript(conn string) {
+	db, err := database.GetDb(conn)
+	if err != nil {
+		log.Println(err.Error())
+	}
+	defer db.Close()
+	query := `delete from utils_script where script_name not like '%py'`
+	_, err = db.Exec(query)
+	if err != nil {
+		log.Println(err.Error())
+	}
+}
 func GetCatalogScript(user *model.User) (result []model.Script) {
 	dir := user.ScriptCatalog
 	type File struct {
@@ -64,12 +76,27 @@ func GetCatalogScript(user *model.User) (result []model.Script) {
 			db.Exec(query)
 		}
 	}
-	query = `select id, name, script_name from utils_script order by script_name`
+	query = `select id, name, script_name, access from utils_script order by script_name`
 	rows, _ := db.Query(query)
+
 	for rows.Next() {
 		var r model.Script
-		rows.Scan(&r.Id, &r.Name, &r.ScriptName)
-		result = append(result, r)
+		isAccess := false
+		rows.Scan(&r.Id, &r.Name, &r.ScriptName, &r.Access)
+		if user.SuperAdmin != user.Login {
+			arr := strings.Split(r.Access, ",")
+			for _, a := range arr {
+				if a == user.Login {
+					isAccess = true
+					break
+				}
+			}
+		} else {
+			isAccess = true
+		}
+		if isAccess {
+			result = append(result, r)
+		}
 	}
 
 	return result
@@ -115,4 +142,54 @@ func ExeScript(user *model.User, scriptId int) (err error, isErr bool) {
 		return err, isErr
 	}
 	return err, isErr
+}
+func GetAccessScript(user *model.User, id int) (err error, result []model.AccessRecord) {
+	db, _ := database.GetDb(user.ConnString)
+	defer db.Close()
+	query := `select access from utils_script where id=` + strconv.Itoa(id)
+
+	var usersInTableStr string
+	err = db.QueryRow(query).Scan(&usersInTableStr)
+	usersInTable := strings.Split(usersInTableStr, ",")
+	query = `select name from master.sys.server_principals where type_desc ='SQL_LOGIN'  and is_disabled=0 order by name`
+	rows, err := db.Query(query)
+	if err != nil {
+		log.Println(err.Error())
+	}
+	defer rows.Close()
+	var usersAll []string
+	for rows.Next() {
+		var n string
+		err = rows.Scan(&n)
+		if err != nil {
+			log.Println(err.Error())
+		}
+		usersAll = append(usersAll, n)
+	}
+	for _, user := range usersAll {
+		isAccess := false
+		for _, u := range usersInTable {
+			if u == user {
+				isAccess = true
+				break
+			}
+		}
+		result = append(result, model.AccessRecord{
+			UserName: user,
+			Access:   isAccess,
+		})
+	}
+
+	return err, result
+}
+func SaveScriptAccess(user *model.User, id int, access string) (err error) {
+	db, _ := database.GetDb(user.ConnString)
+	defer db.Close()
+
+	query := `update utils_script set access = '` + access + `'  where id = ` + strconv.Itoa(id)
+	_, err = db.Exec(query)
+	if err != nil {
+		log.Println(err.Error())
+	}
+	return err
 }

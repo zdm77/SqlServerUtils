@@ -58,7 +58,6 @@
                     .then(response => response.json())
                     .then((response) => {
                         if (response.text != 'not-login') {
-                            console.log(response)
                             const obj = JSON.parse(json);
                             document.getElementById('cardHeader').innerText = response.name_catalog
                             id = response.catalog_id
@@ -85,7 +84,6 @@
                                 html += '<tr>'
                                 let valId = response.values_id[i].replaceAll('"', '')
                                 // let valId =response.values_id[i]
-                                console.log(valId)
                                 for (let j = 0; j < row.length; j++) {
                                     if (response.is_list[j]) {
                                         if (fieldIdIdx !== j) {

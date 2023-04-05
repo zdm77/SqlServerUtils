@@ -125,7 +125,6 @@
                     })
                     .then(response => response.json())
                     .then((response) => {
-                        console.log(response)
                         task.file_upload = response.file_upload
                         result = {
                             headers: response.headers,
