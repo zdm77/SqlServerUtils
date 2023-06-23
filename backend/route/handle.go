@@ -98,7 +98,9 @@ func DoLogin(w http.ResponseWriter, r *http.Request) {
 		userSession.ScriptCatalog = scriptCatalog
 		userSession.PythonExe = pythonExe
 		session.Save(userSession, w, r)
-		db_catalog.DeleteNotPyScript(connStr)
+		if userSession.Login == superAdmin {
+			db_catalog.DeleteNotPyScript(connStr)
+		}
 		files := []string{
 
 			"./ui/html/home.page.tmpl",

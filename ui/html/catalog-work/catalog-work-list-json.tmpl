@@ -32,6 +32,11 @@
                 </li>
             </ul>
         </div>
+        <style>
+             td {
+                 white-space: normal !important;
+            }
+        </style>
         <script>
             function doExcel(){
                 console.log()
@@ -156,7 +161,7 @@
                                             break
                                         }
                                         default: {
-                                            html += '<td><input id="find' + i + '" type="text" class="form-control" onkeyup="find(this)"/></td>'
+                                            html += '<td><input id="find' + i + '" type="text"  class="form-control" onkeyup="find(this)"/></td>'
                                             break
                                         }
                                     }
